@@ -275,15 +275,15 @@ Five independently shippable milestones. Each milestone is a roadmap item: when 
 PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`).
 
 ### Phase 0 — Bootstrap (this PR)
-- [ ] Planning, governance, ADRs, CI/CD, infra config, docs site, workflow automation. *(No application code.)*
+- [x] Planning, governance, ADRs, CI/CD, infra config, docs site, workflow automation. *(No application code.)*
 
 ### Phase 1 — Core + storage
-- [ ] `packages/core` Pydantic models (`Note`, `NoteCreate`, `NoteSummary`, `SearchResult`).
-- [ ] `VaultStore`: read/write Markdown + YAML frontmatter; ULID + slug filename.
-- [ ] Soft-delete to `.trash/`, restore, retention purge.
-- [ ] SQLite FTS5 index: write-through, startup reconciliation, reindex.
-- [ ] Idempotency by `idempotency_key`.
-- [ ] Unit tests + sample-vault fixture.
+- [x] `packages/core` Pydantic models (`Note`, `NoteCreate`, `NoteSummary`, `SearchResult`).
+- [x] `VaultStore`: read/write Markdown + YAML frontmatter; ULID + slug filename.
+- [x] Soft-delete to `.trash/`, restore, retention purge.
+- [x] SQLite FTS5 index: write-through, startup reconciliation, reindex.
+- [x] Idempotency by `idempotency_key`.
+- [x] Unit tests + sample-vault fixture.
 
 ### Phase 2 — Server (MCP first, then REST)
 - [ ] FastAPI app skeleton + bearer auth + `/healthz`.
