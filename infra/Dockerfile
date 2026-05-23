@@ -7,7 +7,7 @@
 # Dockerfile is built on release tags once the application code exists.
 
 # --- Stage 1: build the web UI -------------------------------------------------
-FROM node:24-slim AS ui
+FROM node:26-slim AS ui
 WORKDIR /app
 RUN corepack enable
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
