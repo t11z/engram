@@ -98,7 +98,8 @@ jobs:
       - run: mkdocs build -f docs-site/mkdocs.yml --strict
 
   require-linked-issue:
-    if: github.event_name == 'pull_request'
+    # Dependabot PRs are automated and don't reference an issue; exempt them.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Require an issue reference in the PR body
