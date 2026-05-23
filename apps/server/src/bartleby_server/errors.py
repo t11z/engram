@@ -1,0 +1,55 @@
+"""Error envelope and exception handlers.
+
+Every failure response uses the shape ``{"error": {"code", "message"}}``. Core
+domain exceptions map to HTTP status codes here; the auth middleware builds the
+same envelope itself (it runs outside FastAPI's handler machinery).
+"""
+
+from __future__ import annotations
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from bartleby_core.errors import (
+    BartlebyError,
+    IndexUnavailable,
+    InvalidNote,
+    NoteAlreadyExists,
+    NoteNotFound,
+    NoteNotInTrash,
+    VaultError,
+)
+
+_STATUS: dict[type[BartlebyError], tuple[int, str]] = {
+    NoteNotFound: (404, "not_found"),
+    NoteNotInTrash: (404, "not_in_trash"),
+    NoteAlreadyExists: (409, "already_exists"),
+    InvalidNote: (400, "invalid_note"),
+    IndexUnavailable: (503, "index_unavailable"),
+    VaultError: (500, "vault_error"),
+}
+
+
+def envelope(status: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"error": {"code": code, "message": message}})
+
+
+def install_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(BartlebyError)
+    async def _bartleby(_: Request, exc: BartlebyError) -> JSONResponse:
+        status, code = _STATUS.get(type(exc), (500, "internal_error"))
+        return envelope(status, code, str(exc))
+
+    @app.exception_handler(ValueError)
+    async def _value_error(_: Request, exc: ValueError) -> JSONResponse:
+        # Core raises a bare ValueError for a malformed pagination cursor.
+        return envelope(400, "invalid_request", str(exc))
+
+    @app.exception_handler(RequestValidationError)
+    async def _validation(_: Request, exc: RequestValidationError) -> JSONResponse:
+        return envelope(422, "validation_error", "Request validation failed.")
+
+    @app.exception_handler(Exception)
+    async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
+        return envelope(500, "internal_error", "Internal server error.")
