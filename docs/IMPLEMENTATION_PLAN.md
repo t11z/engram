@@ -219,7 +219,7 @@ and would get its own ADR. Keeping it out keeps v1 focused on the core loop.
 
 ## 6. Build and test pipeline
 
-- **CI matrix (`ci.yml`).** Python 3.12 + 3.13; Node 20. Jobs: `ruff` + `mypy`
+- **CI matrix (`ci.yml`).** Python 3.12 + 3.13; Node 24 (current Active LTS). Jobs: `ruff` + `mypy`
   (Python), `eslint` + `tsc` (TS), `pytest` (core + server), `vitest`
   (extension + web-ui), build all apps, and a **contract-drift** job that
   regenerates the OpenAPI schema from FastAPI and the TS types via

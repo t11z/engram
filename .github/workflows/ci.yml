@@ -18,7 +18,7 @@ jobs:
       contract: ${{ steps.check.outputs.contract }}
       docs: ${{ steps.check.outputs.docs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: check
         run: |
           {
@@ -36,8 +36,8 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --all-extras --dev
@@ -50,11 +50,11 @@ jobs:
     if: needs.detect.outputs.node == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r lint
@@ -67,14 +67,14 @@ jobs:
     if: needs.detect.outputs.contract == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: "3.12"
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: uv sync --all-extras --dev
       - run: pnpm install --frozen-lockfile
@@ -90,8 +90,8 @@ jobs:
     if: needs.detect.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install -r docs-site/requirements.txt
