@@ -2,6 +2,7 @@
   "name": "bartleby",
   "private": true,
   "description": "Bartleby workspace root (tooling for the committed API contract).",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "gen:contract": "openapi-typescript packages/contract/openapi.json -o packages/contract/types.ts"
   },
