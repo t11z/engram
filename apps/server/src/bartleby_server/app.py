@@ -7,11 +7,14 @@ exported and the app built in tests); the CLI enforces the token at serve time.
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from bartleby_core import NoteService
 
@@ -23,6 +26,13 @@ from .mcp_server import mcp
 from .rest import router as rest_router
 from .schemas import HealthResponse
 from .service import set_service
+
+
+def _ui_dir() -> Path:
+    override = os.environ.get("BARTLEBY_UI_DIR")
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parents[4] / "apps" / "web-ui" / "build"
 
 
 @asynccontextmanager
@@ -59,5 +69,9 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
     app.include_router(rest_router)
 
     app.mount("/mcp", mcp.streamable_http_app())
+
+    ui_dir = _ui_dir()
+    if ui_dir.is_dir():
+        app.mount("/", StaticFiles(directory=ui_dir, html=True), name="ui")
 
     return app
