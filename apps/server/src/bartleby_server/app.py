@@ -20,6 +20,7 @@ from .auth import BearerAuthMiddleware
 from .config import ServerSettings
 from .errors import install_exception_handlers
 from .mcp_server import mcp
+from .rest import router as rest_router
 from .schemas import HealthResponse
 from .service import set_service
 
@@ -54,6 +55,8 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", version=__version__)
+
+    app.include_router(rest_router)
 
     app.mount("/mcp", mcp.streamable_http_app())
 
