@@ -22,5 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bartleby-export-openapi` commands.
 - `packages/contract`: the committed OpenAPI schema and generated TypeScript
   types, plus the pnpm workspace; CI now enforces contract drift.
+- `apps/extension`: a Manifest V3 browser extension for Chrome and Firefox, built
+  with WXT. One click clips the active tab to Markdown (Readability + Turndown in
+  an on-demand content script) and POSTs it to `/api/v1/notes` with `source_url`
+  and an idempotency key. Options page stores the server URL + bearer token and
+  requests the server-origin host permission at runtime; minimal permissions
+  (`activeTab`, `storage`, `scripting`). No outbound calls except to the
+  configured server.
 
 [Unreleased]: https://github.com/t11z/bartleby/commits/main

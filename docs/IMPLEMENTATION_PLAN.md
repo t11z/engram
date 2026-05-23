@@ -293,10 +293,10 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 - [x] Static-file mounting for the UI bundle.
 
 ### Phase 3 — Extension
-- [ ] MV3 extension: Readability + Turndown clip of the active tab.
-- [ ] Options page (server URL + bearer token), `activeTab` + configurable host permission.
-- [ ] `POST /api/v1/notes` with `source_url` + `idempotency_key`.
-- [ ] Chrome + Firefox build producing store-ready `.zip` artifacts.
+- [x] MV3 extension: Readability + Turndown clip of the active tab.
+- [x] Options page (server URL + bearer token), `activeTab` + configurable host permission.
+- [x] `POST /api/v1/notes` with `source_url` + `idempotency_key`.
+- [x] Chrome + Firefox build producing store-ready `.zip` artifacts.
 
 ### Phase 4 — Web UI
 - [ ] SvelteKit static app: vault browser, read-only Markdown viewer, delete-with-confirm.
