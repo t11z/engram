@@ -35,6 +35,7 @@ python_version = "3.12"
 strict = true
 explicit_package_bases = true
 mypy_path = "packages/core/src"
+plugins = ["pydantic.mypy"]
 exclude = ['^\.venv/', '^build/', '^dist/']
 
 [[tool.mypy.overrides]]
