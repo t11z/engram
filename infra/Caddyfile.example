@@ -1,0 +1,12 @@
+# Example Caddy config for terminating TLS in front of Bartleby.
+# Caddy obtains and renews certificates automatically. Replace the domain.
+#
+# If you run Caddy via the commented service in docker-compose.yml, the upstream
+# is the service name "bartleby"; if Caddy runs on the host, use 127.0.0.1:8080.
+
+bartleby.example.com {
+	encode zstd gzip
+
+	# Bartleby serves MCP (/mcp), REST (/api/v1), and the UI (/) on one port.
+	reverse_proxy bartleby:8080
+}
