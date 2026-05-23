@@ -19,6 +19,7 @@ from . import __version__
 from .auth import BearerAuthMiddleware
 from .config import ServerSettings
 from .errors import install_exception_handlers
+from .mcp_server import mcp
 from .schemas import HealthResponse
 from .service import set_service
 
@@ -29,7 +30,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     service.startup()
     set_service(service)
     try:
-        yield
+        async with mcp.session_manager.run():
+            yield
     finally:
         set_service(None)
         service.close()
@@ -52,5 +54,7 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", version=__version__)
+
+    app.mount("/mcp", mcp.streamable_http_app())
 
     return app
