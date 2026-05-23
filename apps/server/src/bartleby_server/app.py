@@ -22,7 +22,7 @@ from . import __version__
 from .auth import BearerAuthMiddleware
 from .config import ServerSettings
 from .errors import install_exception_handlers
-from .mcp_server import mcp
+from .mcp_server import build_mcp
 from .rest import router as rest_router
 from .schemas import HealthResponse
 from .service import set_service
@@ -35,22 +35,23 @@ def _ui_dir() -> Path:
     return Path(__file__).resolve().parents[4] / "apps" / "web-ui" / "build"
 
 
-@asynccontextmanager
-async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
-    service = NoteService.from_env()
-    service.startup()
-    set_service(service)
-    try:
-        async with mcp.session_manager.run():
-            yield
-    finally:
-        set_service(None)
-        service.close()
-
-
 def create_app(settings: ServerSettings | None = None) -> FastAPI:
     settings = settings or ServerSettings()
-    app = FastAPI(title="Bartleby", version=__version__, lifespan=_lifespan)
+    mcp = build_mcp()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        service = NoteService.from_env()
+        service.startup()
+        set_service(service)
+        try:
+            async with mcp.session_manager.run():
+                yield
+        finally:
+            set_service(None)
+            service.close()
+
+    app = FastAPI(title="Bartleby", version=__version__, lifespan=lifespan)
     install_exception_handlers(app)
 
     app.add_middleware(BearerAuthMiddleware, token=settings.auth_token)

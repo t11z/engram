@@ -1,6 +1,9 @@
-"""The MCP server and its five tools. Each tool is a thin call into the shared
-``NoteService``; docstrings are written for LLM consumption (they become the tool
-descriptions). Tools return plain JSON-serializable data.
+"""The MCP tools and a factory that builds a fresh ``FastMCP`` per app.
+
+A new instance per ``create_app`` avoids the streamable-HTTP session manager's
+run-once constraint (so the app can be built more than once in a process, e.g.
+across tests). Each tool is a thin call into the shared ``NoteService``;
+docstrings are written for LLM consumption (they become the tool descriptions).
 """
 
 from __future__ import annotations
@@ -12,19 +15,7 @@ from bartleby_core import NoteCreate
 
 from .service import get_service
 
-# streamable_http_path="/" so that, mounted at "/mcp", the endpoint is exactly
-# "/mcp" (not "/mcp/mcp"). DNS-rebinding host/origin checks are disabled because
-# the endpoint is bearer-authenticated and deployed behind the user's reverse
-# proxy at an arbitrary host, which the default allowlist would reject.
-mcp = FastMCP(
-    "Bartleby",
-    json_response=True,
-    streamable_http_path="/",
-    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
-)
 
-
-@mcp.tool()
 def save_note(
     title: str,
     body: str,
@@ -48,7 +39,6 @@ def save_note(
     return {"id": note.id}
 
 
-@mcp.tool()
 def search_notes(query: str, tag: str | None = None, limit: int = 20) -> list[dict[str, object]]:
     """Search the vault by keyword and return the best matches with a snippet and
     id. Use this before answering from memory, to ground your answer in what the
@@ -59,7 +49,6 @@ def search_notes(query: str, tag: str | None = None, limit: int = 20) -> list[di
     ]
 
 
-@mcp.tool()
 def read_note(id: str) -> dict[str, object]:
     """Read one note in full by its `id` (get the id from `search_notes` or
     `list_notes`). Returns the title, tags, and full Markdown body.
@@ -68,7 +57,6 @@ def read_note(id: str) -> dict[str, object]:
     return {"id": note.id, "title": note.title, "tags": note.tags, "body": note.body}
 
 
-@mcp.tool()
 def list_notes(tag: str | None = None, limit: int = 20) -> list[dict[str, object]]:
     """List recent notes (newest first) as id + title + tags, optionally filtered
     by `tag`. Use this to browse what exists when you don't have a search term.
@@ -77,9 +65,30 @@ def list_notes(tag: str | None = None, limit: int = 20) -> list[dict[str, object
     return [{"id": s.id, "title": s.title, "tags": s.tags} for s in items]
 
 
-@mcp.tool()
 def delete_note(id: str) -> dict[str, str]:
     """Move a note to the trash by `id` (soft-delete; it can be restored for 30
     days). Confirm with the user before deleting. Example: delete_note(id='01J…')."""
     get_service().delete(id)
     return {"id": id, "status": "deleted"}
+
+
+def build_mcp() -> FastMCP:
+    """Construct a fresh MCP server with the five tools registered.
+
+    ``streamable_http_path="/"`` makes the endpoint exactly ``/mcp`` once mounted.
+    DNS-rebinding host/origin checks are disabled: the endpoint is
+    bearer-authenticated and deployed behind the user's reverse proxy at an
+    arbitrary host that the default allowlist would reject.
+    """
+    mcp = FastMCP(
+        "Bartleby",
+        json_response=True,
+        streamable_http_path="/",
+        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+    )
+    mcp.tool()(save_note)
+    mcp.tool()(search_notes)
+    mcp.tool()(read_note)
+    mcp.tool()(list_notes)
+    mcp.tool()(delete_note)
+    return mcp
