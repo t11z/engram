@@ -18,7 +18,7 @@ COPY apps/web-ui apps/web-ui
 RUN pnpm --filter web-ui build   # -> apps/web-ui/build (static adapter)
 
 # --- Stage 2: assemble the server ---------------------------------------------
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 ENV PYTHONUNBUFFERED=1 \
