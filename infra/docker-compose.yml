@@ -1,0 +1,46 @@
+# Bartleby — minimal single-user deployment.
+#
+#   1. cp .env.example .env   (then set BARTLEBY_AUTH_TOKEN)
+#   2. docker compose up -d
+#
+# By default this binds to localhost only. Put it behind HTTPS before exposing
+# it to the internet — see Caddyfile.example.
+
+services:
+  bartleby:
+    image: ghcr.io/t11z/bartleby:latest
+    # To build from source instead of pulling the image:
+    # build:
+    #   context: ..
+    #   dockerfile: infra/Dockerfile
+    container_name: bartleby
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - vault:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz').status==200 else 1)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Optional TLS termination. Uncomment and edit Caddyfile.example to use.
+  # caddy:
+  #   image: caddy:2
+  #   restart: unless-stopped
+  #   depends_on: [bartleby]
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile.example:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+
+volumes:
+  vault:
+  # caddy_data:
+  # caddy_config:

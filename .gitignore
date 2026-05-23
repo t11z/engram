@@ -1,0 +1,46 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --- Node / JS ---
+node_modules/
+.pnpm-store/
+.svelte-kit/
+apps/web-ui/build/
+apps/extension/dist/
+*.tsbuildinfo
+.eslintcache
+
+# --- Docs site ---
+docs-site/site/
+
+# --- Vault / runtime data (never commit a user's notes) ---
+/data/
+*.db
+*.db-shm
+*.db-wal
+
+# --- Claude workflow state (per-session, not shared) ---
+.claude/state/active-issue
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

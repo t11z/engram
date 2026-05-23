@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect which projects exist so jobs no-op cleanly until code lands.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.check.outputs.python }}
+      node: ${{ steps.check.outputs.node }}
+      contract: ${{ steps.check.outputs.contract }}
+      docs: ${{ steps.check.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: check
+        run: |
+          {
+            echo "python=$([ -f pyproject.toml ] && echo true || echo false)"
+            echo "node=$([ -f package.json ] && echo true || echo false)"
+            echo "contract=$([ -d packages/contract ] && echo true || echo false)"
+            echo "docs=$([ -f docs-site/mkdocs.yml ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+  python:
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run mypy .
+      - run: uv run pytest
+
+  node:
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r lint
+      - run: pnpm -r exec tsc --noEmit
+      - run: pnpm -r test
+      - run: pnpm -r build
+
+  contract-drift:
+    needs: detect
+    if: needs.detect.outputs.contract == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: uv sync --all-extras --dev
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate OpenAPI schema and TypeScript types
+        run: |
+          uv run bartleby-export-openapi packages/contract/openapi.json
+          pnpm exec openapi-typescript packages/contract/openapi.json -o packages/contract/types.ts
+      - name: Fail on contract drift
+        run: git diff --exit-code packages/contract
+
+  docs:
+    needs: detect
+    if: needs.detect.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r docs-site/requirements.txt
+      - run: mkdocs build -f docs-site/mkdocs.yml --strict
+
+  require-linked-issue:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require an issue reference in the PR body
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if printf '%s' "$BODY" | grep -qiE '(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]+#[0-9]+'; then
+            echo "Found a closing issue reference."
+          else
+            echo "::error::PR body must link an issue, e.g. 'Closes #123'. See CONTRIBUTING.md."
+            exit 1
+          fi

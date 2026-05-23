@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement or new capability.
+title: "feat: <short description>"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bartleby v1 is deliberately small. Some things are out of scope by design
+        (in-UI editor, wikilinks/backlinks/graph, embeddings/semantic search,
+        multi-tenancy, accounts, plugins, bulk ops, mobile app, hosted demo).
+        Please check the implementation plan before filing.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do that's hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: I've read the v1 out-of-scope list and believe this fits the project's direction.
+          required: true

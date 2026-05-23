@@ -1,0 +1,45 @@
+site_name: Bartleby
+site_description: A self-hosted personal knowledge vault that any LLM can read and write through the Model Context Protocol.
+site_url: https://t11z.github.io/bartleby/
+repo_url: https://github.com/t11z/bartleby
+repo_name: t11z/bartleby
+copyright: "&copy; Thomas Sprock — MIT licensed"
+
+theme:
+  name: material
+  font:
+    text: Lora
+    code: JetBrains Mono
+  palette:
+    - scheme: default
+      primary: black
+      accent: grey
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.integrate
+
+extra:
+  generator: false
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Quick start: quick-start.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - MCP tool reference: mcp-tools.md
+  - API reference: api-reference.md
+  - Changelog: changelog.md

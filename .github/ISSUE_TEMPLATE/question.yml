@@ -1,0 +1,28 @@
+name: Question / support
+description: Ask how to use or configure Bartleby.
+title: "question: <short description>"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For open-ended discussion, consider GitHub Discussions instead. Use this
+        for a specific question that may need a doc fix or has a concrete answer.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What you're trying to achieve, and what you've tried.
+  - type: checkboxes
+    id: checked-docs
+    attributes:
+      label: Before asking
+      options:
+        - label: I checked the docs site and existing issues first.
+          required: true
