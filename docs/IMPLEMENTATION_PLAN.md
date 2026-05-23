@@ -286,11 +286,11 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 - [x] Unit tests + sample-vault fixture.
 
 ### Phase 2 — Server (MCP first, then REST)
-- [ ] FastAPI app skeleton + bearer auth + `/healthz`.
-- [ ] MCP endpoint with the five tools (`save_note`, `search_notes`, `read_note`, `list_notes`, `delete_note`).
-- [ ] REST `/api/v1` endpoints per §4.
-- [ ] OpenAPI export + committed TS types in `packages/contract`; CI drift gate live.
-- [ ] Static-file mounting for the UI bundle.
+- [x] FastAPI app skeleton + bearer auth + `/healthz`.
+- [x] MCP endpoint with the five tools (`save_note`, `search_notes`, `read_note`, `list_notes`, `delete_note`).
+- [x] REST `/api/v1` endpoints per §4.
+- [x] OpenAPI export + committed TS types in `packages/contract`; CI drift gate live.
+- [x] Static-file mounting for the UI bundle.
 
 ### Phase 3 — Extension
 - [ ] MV3 extension: Readability + Turndown clip of the active tab.

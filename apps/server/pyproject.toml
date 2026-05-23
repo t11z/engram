@@ -1,0 +1,24 @@
+[project]
+name = "bartleby-server"
+version = "0.1.0"
+description = "Bartleby server: FastAPI app serving REST, MCP, and the static UI."
+requires-python = ">=3.12"
+dependencies = [
+    "bartleby-core",
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.32,<1",
+    "mcp>=1.27,<2",
+    "pydantic>=2.11,<3",
+    "pydantic-settings>=2.7,<3",
+]
+
+[project.scripts]
+bartleby = "bartleby_server.cli:main"
+bartleby-export-openapi = "bartleby_server.export_openapi:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bartleby_server"]
