@@ -17,5 +17,11 @@ def main() -> None:
             "BARTLEBY_AUTH_TOKEN is required. Generate one with: openssl rand -hex 32\n"
         )
         raise SystemExit(2)
+    if settings.public_url and not settings.oauth_password:
+        sys.stderr.write(
+            "BARTLEBY_OAUTH_PASSWORD is required when BARTLEBY_PUBLIC_URL is set "
+            "(it gates the OAuth login page). Generate one with: openssl rand -hex 32\n"
+        )
+        raise SystemExit(2)
     app = create_app(settings)
     uvicorn.run(app, host=settings.host, port=settings.port)
