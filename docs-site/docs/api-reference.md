@@ -1,9 +1,9 @@
 # API reference
 
-!!! note "Hand-maintained for now"
-    Until the server exists, this summary is maintained by hand. Once the server
-    ships, the full reference will be generated from the committed OpenAPI schema
-    in `packages/contract`.
+This summarizes the REST API. The machine-readable contract is the committed
+[OpenAPI schema](https://github.com/t11z/bartleby/blob/main/packages/contract/openapi.json)
+(`packages/contract/openapi.json`), from which the TypeScript client types are
+generated; CI fails on drift between the server and that schema.
 
 All endpoints are under `/api/v1` and require `Authorization: Bearer <token>`
 (except `/healthz`). Responses are JSON.
