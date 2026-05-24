@@ -23,6 +23,8 @@ node_modules/
 .svelte-kit/
 apps/web-ui/build/
 apps/extension/dist/
+.wxt/
+.output/
 *.tsbuildinfo
 .eslintcache
 
