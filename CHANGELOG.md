@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web UI and documentation-site favicons now use the Bartleby quill brand mark
   (replacing the placeholder `B` mark).
 
+### Security
+- Resolve two Dependabot alerts in transitive npm dependencies via
+  `pnpm.overrides`: `cookie` (`<0.7.0` → `^0.7.0`, GHSA-pxg6-pf52-xh8x, via
+  `@sveltejs/kit`) and `uuid` (`<11.1.1` → `^11.1.1`, GHSA-w5hq-g745-h8pq, via
+  `wxt > web-ext-run > node-notifier`).
+
 ## [0.1.0] - 2026-05-24
 
 ### Added
