@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BARTLEBY_PUBLIC_URL` is unset the server behaves exactly as before.
 - Extension icons (16/32/48/128) using the Bartleby quill brand mark, shown in
   the browser toolbar and the Chrome Web Store / Firefox AMO listings.
+- Extension: a right-click "Open Bartleby server" entry on the toolbar icon's
+  context menu that opens the configured server's web UI in a new tab (or the
+  options page when no server is configured yet).
 
 ### Changed
 - Web UI and documentation-site favicons now use the Bartleby quill brand mark

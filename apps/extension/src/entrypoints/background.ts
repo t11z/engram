@@ -5,9 +5,11 @@ import { setError, setSuccess, scheduleClear } from "@/lib/badge";
 import { getConfig, isConfigured } from "@/lib/config";
 import type { ExtractResponse } from "@/lib/messaging";
 import { buildNotePayload } from "@/lib/payload";
+import { serverLinkUrl } from "@/lib/url";
 
 const EXTRACTOR_FILE = "content-scripts/extractor.js";
 const EXTRACT_MESSAGE = "bartleby:extract";
+const OPEN_SERVER_MENU_ID = "bartleby:open-server";
 
 async function clip(tab: chrome.tabs.Tab): Promise<void> {
   try {
@@ -41,7 +43,29 @@ async function clip(tab: chrome.tabs.Tab): Promise<void> {
   }
 }
 
+async function openServer(): Promise<void> {
+  const config = await getConfig();
+  const url = serverLinkUrl(config.serverUrl);
+  if (!url) {
+    await chrome.runtime.openOptionsPage();
+    return;
+  }
+  await chrome.tabs.create({ url });
+}
+
 export default defineBackground(() => {
+  chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+      id: OPEN_SERVER_MENU_ID,
+      title: "Open Bartleby server",
+      contexts: ["action"],
+    });
+  });
+
+  chrome.contextMenus.onClicked.addListener((info) => {
+    if (info.menuItemId === OPEN_SERVER_MENU_ID) void openServer();
+  });
+
   chrome.action.onClicked.addListener((tab) => {
     void clip(tab);
   });

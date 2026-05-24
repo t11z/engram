@@ -30,7 +30,7 @@ export default defineConfig({
         "128": "icon/128.png",
       },
     },
-    permissions: ["activeTab", "storage", "scripting"],
+    permissions: ["activeTab", "storage", "scripting", "contextMenus"],
     optional_host_permissions: ["*://*/*"],
     browser_specific_settings: {
       gecko: {

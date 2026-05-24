@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apiUrl, serverOrigin } from "@/lib/url";
+import { apiUrl, serverLinkUrl, serverOrigin } from "@/lib/url";
 
 describe("serverOrigin", () => {
   it("extracts the origin", () => {
@@ -8,6 +8,17 @@ describe("serverOrigin", () => {
   });
   it("throws on invalid input", () => {
     expect(() => serverOrigin("not a url")).toThrow();
+  });
+});
+
+describe("serverLinkUrl", () => {
+  it("returns the origin for a valid server URL", () => {
+    expect(serverLinkUrl("https://host:8080/x")).toBe("https://host:8080");
+    expect(serverLinkUrl("https://host:8080/")).toBe("https://host:8080");
+  });
+  it("returns null when unset or invalid", () => {
+    expect(serverLinkUrl("")).toBeNull();
+    expect(serverLinkUrl("not a url")).toBeNull();
   });
 });
 
