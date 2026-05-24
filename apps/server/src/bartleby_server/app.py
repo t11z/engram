@@ -31,6 +31,7 @@ from pydantic import AnyHttpUrl
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from bartleby_core import NoteService
 from bartleby_core import Settings as CoreSettings
@@ -55,6 +56,35 @@ def _ui_dir() -> Path:
     if override:
         return Path(override)
     return Path(__file__).resolve().parents[4] / "apps" / "web-ui" / "build"
+
+
+class NormalizeMcpPath:
+    """Serve the MCP transport at the bare ``/mcp`` path, not only ``/mcp/``.
+
+    The OAuth protected-resource metadata advertises ``<public_url>/mcp`` (no
+    trailing slash) as the MCP resource, and that is the URL claude.ai connects
+    to. But the transport is ``app.mount``ed at ``/mcp``, and Starlette only
+    routes a mounted app for ``/mcp/...`` — a request to the bare ``/mcp`` falls
+    through to the static-UI mount at ``/`` instead (``GET`` → 404, ``POST`` →
+    405, since ``StaticFiles`` serves neither). claude.ai therefore can't reach
+    the transport after authorizing.
+
+    Rewrite the bare path to ``/mcp/`` before routing so the request hits the
+    mount. Doing it here (rather than returning a redirect) means the server
+    actually serves the resource URL it advertises and does not depend on the
+    client following a redirect on a POST body.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope.get("path") == "/mcp":
+            scope = dict(scope)
+            scope["path"] = "/mcp/"
+            if scope.get("raw_path") == b"/mcp":
+                scope["raw_path"] = b"/mcp/"
+        await self.app(scope, receive, send)
 
 
 def _install_oauth(
@@ -150,6 +180,9 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+    # Outermost: normalise bare `/mcp` to `/mcp/` so claude.ai reaches the mounted
+    # transport (the resource URL is advertised without a trailing slash).
+    app.add_middleware(NormalizeMcpPath)
 
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:

@@ -1,6 +1,16 @@
+import shutil
+from pathlib import Path
+
+import pytest
 from fastapi.testclient import TestClient
 
 from bartleby_server import mcp_server
+from bartleby_server.app import create_app
+from bartleby_server.config import ServerSettings
+
+ROOT = Path(__file__).resolve().parents[3]
+SAMPLE_VAULT = ROOT / "packages" / "core" / "tests" / "fixtures" / "sample-vault"
+TOKEN = "test-token"
 
 
 def test_save_and_read_note_tools(client: TestClient) -> None:
@@ -61,3 +71,41 @@ def test_tools_list_over_wire(client: TestClient, auth: dict[str, str]) -> None:
     assert r.status_code == 200
     for name in ["save_note", "search_notes", "read_note", "list_notes", "delete_note"]:
         assert name in r.text
+
+
+def test_bare_mcp_path_reaches_transport(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # claude.ai connects to the advertised resource URL `/mcp` (no trailing slash).
+    # With the static UI mounted at "/" (as in production), a bare `/mcp` request
+    # would otherwise fall through to StaticFiles — 404 for GET, 405 for POST — so
+    # this faithfully reproduces the connector failure. NormalizeMcpPath must
+    # rewrite it to `/mcp/` and serve the transport directly (no redirect).
+    vault = tmp_path / "vault"
+    shutil.copytree(SAMPLE_VAULT, vault)
+    ui_dir = tmp_path / "ui"
+    ui_dir.mkdir()
+    (ui_dir / "index.html").write_text("<!doctype html>ok")
+    monkeypatch.setenv("BARTLEBY_VAULT_PATH", str(vault))
+    monkeypatch.setenv("BARTLEBY_INDEX_PATH", str(tmp_path / "index.db"))
+    monkeypatch.setenv("BARTLEBY_AUTH_TOKEN", TOKEN)
+    monkeypatch.setenv("BARTLEBY_UI_DIR", str(ui_dir))
+    monkeypatch.delenv("BARTLEBY_CORS_ORIGINS", raising=False)
+
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+    }
+    init = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "test", "version": "0"},
+        },
+    }
+    with TestClient(create_app(ServerSettings())) as client:
+        r = client.post("/mcp", headers=headers, json=init, follow_redirects=False)
+    assert r.status_code == 200, f"{r.status_code}: {r.text}"
+    assert "mcp-session-id" in r.headers
