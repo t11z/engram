@@ -15,6 +15,17 @@ class ServerSettings(BaseSettings):
     port: int = 8080
     cors_origins: str = ""
 
+    # Public HTTPS origin (no path), e.g. https://bartleby.example.com. Setting it
+    # turns on the embedded OAuth authorization server so claude.ai can connect as
+    # a Custom Connector; it also becomes the OAuth issuer / resource identifier.
+    public_url: str = ""
+    # Login-gate password for the OAuth consent page. Required when public_url is set.
+    oauth_password: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def oauth_enabled(self) -> bool:
+        return bool(self.public_url)

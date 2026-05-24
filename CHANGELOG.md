@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Optional embedded OAuth 2.1 authorization server so the MCP endpoint can be
+  added to claude.ai (Web) as a Custom Connector. Opt in by setting
+  `BARTLEBY_PUBLIC_URL` (the public HTTPS origin / token issuer) and
+  `BARTLEBY_OAUTH_PASSWORD` (gates the login/consent page). Supports Dynamic
+  Client Registration, the authorization-code + PKCE flow, refresh-token
+  rotation, and revocation, with clients and tokens persisted in
+  `<vault>/.bartleby/oauth.db`. The static `BARTLEBY_AUTH_TOKEN` keeps working —
+  `/mcp` accepts either an OAuth token or the static token — and when
+  `BARTLEBY_PUBLIC_URL` is unset the server behaves exactly as before.
 - Extension icons (16/32/48/128) using the Bartleby quill brand mark, shown in
   the browser toolbar and the Chrome Web Store / Firefox AMO listings.
 

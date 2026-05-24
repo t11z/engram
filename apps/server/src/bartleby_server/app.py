@@ -1,8 +1,13 @@
 """FastAPI application factory: lifespan, auth, error handlers, and `/healthz`.
 
-The MCP endpoint, REST routes, and static mount are added in later steps.
-``create_app`` deliberately does not require an auth token (so the schema can be
-exported and the app built in tests); the CLI enforces the token at serve time.
+The MCP endpoint, REST routes, and static mount are added here. ``create_app``
+deliberately does not require an auth token (so the schema can be exported and the
+app built in tests); the CLI enforces the token at serve time.
+
+When ``BARTLEBY_PUBLIC_URL`` is set, the embedded OAuth authorization server is
+wired in (see ``bartleby_server.oauth``): OAuth metadata/endpoints are mounted at
+the app root and ``/mcp`` is protected by the SDK middleware chain, which accepts
+both OAuth tokens and the legacy static bearer token.
 """
 
 from __future__ import annotations
@@ -13,16 +18,33 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from mcp.server.auth.middleware.auth_context import AuthContextMiddleware
+from mcp.server.auth.middleware.bearer_auth import BearerAuthBackend, RequireAuthMiddleware
+from mcp.server.auth.routes import (
+    build_resource_metadata_url,
+    create_auth_routes,
+    create_protected_resource_routes,
+)
+from mcp.server.auth.settings import ClientRegistrationOptions, RevocationOptions
+from mcp.server.fastmcp import FastMCP
+from pydantic import AnyHttpUrl
+from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 from bartleby_core import NoteService
+from bartleby_core import Settings as CoreSettings
 
 from . import __version__
 from .auth import BearerAuthMiddleware
 from .config import ServerSettings
 from .errors import install_exception_handlers
 from .mcp_server import build_mcp
+from .oauth import SCOPES
+from .oauth.login import create_login_routes
+from .oauth.provider import BartlebyOAuthProvider
+from .oauth.store import OAuthStore
+from .oauth.verifier import BartlebyTokenVerifier
 from .rest import router as rest_router
 from .schemas import HealthResponse
 from .service import set_service
@@ -35,26 +57,92 @@ def _ui_dir() -> Path:
     return Path(__file__).resolve().parents[4] / "apps" / "web-ui" / "build"
 
 
+def _install_oauth(
+    app: FastAPI,
+    settings: ServerSettings,
+    provider: BartlebyOAuthProvider,
+    verifier: BartlebyTokenVerifier,
+    mcp: FastMCP,
+) -> None:
+    """Mount OAuth metadata/endpoints at the app root and protect ``/mcp``.
+
+    Metadata and endpoints (``/.well-known/...``, ``/authorize``, ``/token``,
+    ``/register``, ``/revoke``, ``/oauth/login``) must live at the root because that
+    is where claude.ai looks for them — hence we register the SDK route factories
+    directly rather than mounting FastMCP's own (which would sit under ``/mcp``).
+    """
+    issuer_url = AnyHttpUrl(settings.public_url)
+    resource_url = AnyHttpUrl(settings.public_url.rstrip("/") + "/mcp")
+
+    auth_routes = create_auth_routes(
+        provider=provider,
+        issuer_url=issuer_url,
+        client_registration_options=ClientRegistrationOptions(
+            enabled=True,
+            valid_scopes=list(SCOPES),
+            default_scopes=list(SCOPES),
+        ),
+        revocation_options=RevocationOptions(enabled=True),
+    )
+    prm_routes = create_protected_resource_routes(
+        resource_url=resource_url,
+        authorization_servers=[issuer_url],
+        scopes_supported=list(SCOPES),
+    )
+    login_routes = create_login_routes(provider, settings.oauth_password)
+    app.router.routes.extend([*auth_routes, *prm_routes, *login_routes])
+
+    # Protect /mcp with the same chain FastMCP composes internally: authenticate the
+    # bearer token, expose it in the request context, then require a valid token. The
+    # resource-metadata URL drives the WWW-Authenticate header claude.ai follows.
+    resource_metadata_url = build_resource_metadata_url(resource_url)
+    mcp_app = AuthenticationMiddleware(
+        AuthContextMiddleware(
+            RequireAuthMiddleware(mcp.streamable_http_app(), [], resource_metadata_url)
+        ),
+        backend=BearerAuthBackend(verifier),
+    )
+    app.mount("/mcp", mcp_app)
+
+
 def create_app(settings: ServerSettings | None = None) -> FastAPI:
     settings = settings or ServerSettings()
     mcp = build_mcp()
+
+    oauth_store: OAuthStore | None = None
+    oauth_provider: BartlebyOAuthProvider | None = None
+    oauth_verifier: BartlebyTokenVerifier | None = None
+    if settings.oauth_enabled:
+        db_path = CoreSettings().vault_path / ".bartleby" / "oauth.db"
+        oauth_store = OAuthStore(db_path)
+        oauth_provider = BartlebyOAuthProvider(oauth_store, settings.public_url)
+        oauth_verifier = BartlebyTokenVerifier(oauth_provider, settings.auth_token)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         service = NoteService.from_env()
         service.startup()
         set_service(service)
+        if oauth_store is not None:
+            oauth_store.open()
         try:
             async with mcp.session_manager.run():
                 yield
         finally:
             set_service(None)
             service.close()
+            if oauth_store is not None:
+                oauth_store.close()
 
     app = FastAPI(title="Bartleby", version=__version__, lifespan=lifespan)
     install_exception_handlers(app)
 
-    app.add_middleware(BearerAuthMiddleware, token=settings.auth_token)
+    # With OAuth on, /mcp is guarded by the SDK chain, so this middleware narrows to
+    # /api; without OAuth it keeps protecting both /api and /mcp as before.
+    protected_prefixes = ("/api",) if settings.oauth_enabled else None
+    app.add_middleware(
+        BearerAuthMiddleware, token=settings.auth_token, protected_prefixes=protected_prefixes
+    )
     if settings.cors_origin_list:
         app.add_middleware(
             CORSMiddleware,
@@ -69,7 +157,10 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
 
     app.include_router(rest_router)
 
-    app.mount("/mcp", mcp.streamable_http_app())
+    if oauth_provider is not None and oauth_verifier is not None:
+        _install_oauth(app, settings, oauth_provider, oauth_verifier, mcp)
+    else:
+        app.mount("/mcp", mcp.streamable_http_app())
 
     ui_dir = _ui_dir()
     if ui_dir.is_dir():

@@ -36,9 +36,15 @@ bartleby.example.com {
 
 ## Connecting clients
 
-- **MCP client (e.g. Claude):** add an MCP server pointing at
-  `https://your-host/mcp` and supply your `BARTLEBY_AUTH_TOKEN` via the client's
-  standard auth mechanism.
+- **MCP client (e.g. Claude Desktop, MCP Inspector):** add an MCP server pointing
+  at `https://your-host/mcp` and supply your `BARTLEBY_AUTH_TOKEN` via the
+  client's standard auth mechanism.
+- **claude.ai (Web) Custom Connector:** claude.ai cannot store a static token, so
+  enable OAuth — set `BARTLEBY_PUBLIC_URL` (your public HTTPS origin) and
+  `BARTLEBY_OAUTH_PASSWORD`, then in claude.ai go to **Settings → Connectors → Add
+  custom connector** and paste `https://your-host/mcp`. claude.ai self-registers,
+  redirects you to a login page where you enter the OAuth password, and is then
+  connected. See [Configuration → OAuth for claude.ai](configuration.md#oauth-for-claudeai-optional).
 - **Web UI:** browse to `https://your-host/`.
 - **Browser extension:** install it, open its options page, and set the server
   URL and the same token.

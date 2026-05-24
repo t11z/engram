@@ -28,7 +28,10 @@ Decisions of record (not up for revision in v1):
   Rationale in [ADR-0002](./adr/0002-mcp-rest-coexist.md).
 - **Storage.** Markdown files on disk with YAML frontmatter; the filesystem is
   the source of truth. A rebuildable SQLite FTS5 index accelerates search.
-- **Auth.** A single bearer token (env var) shared by REST and MCP. No OAuth in v1.
+- **Auth.** A single bearer token (env var) shared by REST and MCP. An optional
+  embedded OAuth 2.1 authorization server (opt-in via `BARTLEBY_PUBLIC_URL`) lets
+  claude.ai connect as a Custom Connector; `/mcp` then accepts either an OAuth
+  token or the static bearer token. See [ADR-0004](./adr/0004-oauth-embedded-authorization-server.md).
 - **Privacy.** The server makes no outbound calls. No telemetry, no update checks.
 - **Soft-delete.** Delete moves notes to `.trash/`; a scheduled purge removes them
   after a configurable retention (default 30 days). Restore is supported.
@@ -260,6 +263,8 @@ and would get its own ADR. Keeping it out keeps v1 focused on the core loop.
   | `BARTLEBY_TRASH_RETENTION_DAYS` | `30` | Days before trashed notes are purged. |
   | `BARTLEBY_INDEX_PATH` | `<vault>/.bartleby/index.db` | SQLite FTS5 index location. |
   | `BARTLEBY_CORS_ORIGINS` | *(empty)* | Comma-separated origins for the extension/web-ui. |
+  | `BARTLEBY_PUBLIC_URL` | *(empty)* | Public HTTPS origin; setting it enables the embedded OAuth server (issuer + resource id). |
+  | `BARTLEBY_OAUTH_PASSWORD` | *(empty)* | Login-gate password for the OAuth consent page; required when `BARTLEBY_PUBLIC_URL` is set. |
   | `BARTLEBY_LOG_LEVEL` | `info` | Log verbosity. |
 
 - **First-run experience.** With no `BARTLEBY_AUTH_TOKEN`, the server refuses to
@@ -316,7 +321,7 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 | **MCP SDK / spec churn.** The MCP Python SDK and spec are evolving. | Pin the SDK version; keep MCP tool handlers thin over `packages/core`; cover them with tests against MCP Inspector. |
 | **Index/file divergence** after out-of-band edits. | Index is disposable; startup reconciliation + `reindex` rebuild it from files (the source of truth). |
 | **Concurrent writes** to the same note. | Single-user assumption; serialize writes in `VaultStore` and use `updated_at` for last-writer-wins. Revisit only if multi-writer becomes real. |
-| **Bearer token leakage** (single shared secret). | Document HTTPS-only deployment (Caddy example); token in env, never logged; server makes no outbound calls. Tighter auth (OAuth) deferred — would get an ADR. |
+| **Bearer token leakage** (single shared secret). | Document HTTPS-only deployment (Caddy example); token in env, never logged; server makes no outbound calls. Optional embedded OAuth 2.1 server ([ADR-0004](./adr/0004-oauth-embedded-authorization-server.md)) issues per-client, expiring tokens for claude.ai while the static token stays for other clients. |
 | **Extension store review friction** (permissions). | Minimal permissions (`activeTab` + user-configured host); justify each in the listing; source-mapped Firefox builds; reproducible CI artifacts. |
 | **FTS5 unavailable** in some exotic Python build. | CPython ships FTS5; document the requirement and fail fast at startup with a clear message if the module is missing. |
 | **Filename slug collisions.** | Resolve by appending a short suffix; identity is the ULID, not the filename, so collisions are cosmetic. |
