@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Extension icons (16/32/48/128) using the Bartleby quill brand mark, shown in
+  the browser toolbar and the Chrome Web Store / Firefox AMO listings.
+
+### Changed
+- Web UI and documentation-site favicons now use the Bartleby quill brand mark
+  (replacing the placeholder `B` mark).
+
 ## [0.1.0] - 2026-05-24
 
 ### Added

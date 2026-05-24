@@ -7,6 +7,7 @@ copyright: "&copy; Thomas Sprock — MIT licensed"
 
 theme:
   name: material
+  favicon: assets/favicon.png
   font:
     text: Lora
     code: JetBrains Mono

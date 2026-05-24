@@ -22,7 +22,14 @@ export default defineConfig({
   manifest: {
     name: "Bartleby",
     description: "Clip the active tab to Markdown and save it to your Bartleby server.",
-    action: {},
+    action: {
+      default_icon: {
+        "16": "icon/16.png",
+        "32": "icon/32.png",
+        "48": "icon/48.png",
+        "128": "icon/128.png",
+      },
+    },
     permissions: ["activeTab", "storage", "scripting"],
     optional_host_permissions: ["*://*/*"],
     browser_specific_settings: {
