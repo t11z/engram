@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- MCP transport is now reachable at the bare `/mcp` path, not only `/mcp/`. The
+  OAuth protected-resource metadata advertises `<public_url>/mcp` (no trailing
+  slash) and claude.ai connects to exactly that, but the mounted transport only
+  answered `/mcp/`, so a bare `/mcp` request fell through to the static-UI mount
+  (404 for `GET`, 405 for `POST`) and the connector failed right after
+  authorizing. The server now serves the advertised URL directly.
+
 ### Added
 - Optional embedded OAuth 2.1 authorization server so the MCP endpoint can be
   added to claude.ai (Web) as a Custom Connector. Opt in by setting
