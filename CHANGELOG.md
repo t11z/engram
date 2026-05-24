@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-24
+
 ### Added
 - Project bootstrap: implementation plan, governance docs (README, security
   policy, contributing guide), ADRs, CI/CD workflows, deployment scaffolding,
@@ -34,4 +36,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   note's Markdown (sanitized with DOMPurify), delete with confirm, full-text
   search, and view/restore trashed notes. Single route with query-string state.
 
-[Unreleased]: https://github.com/t11z/bartleby/commits/main
+[Unreleased]: https://github.com/t11z/bartleby/compare/v0.1.0...main
+[0.1.0]: https://github.com/t11z/bartleby/releases/tag/v0.1.0
