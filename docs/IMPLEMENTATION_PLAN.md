@@ -299,8 +299,8 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 - [x] Chrome + Firefox build producing store-ready `.zip` artifacts.
 
 ### Phase 4 — Web UI
-- [ ] SvelteKit static app: vault browser, read-only Markdown viewer, delete-with-confirm.
-- [ ] Consumes committed contract types; bundle served at `/`.
+- [x] SvelteKit static app: vault browser, read-only Markdown viewer, delete-with-confirm.
+- [x] Consumes committed contract types; bundle served at `/`.
 
 ### Phase 5 — Polish + release
 - [ ] Docker image to GHCR via `release.yml`; extension artifacts attached to the Release.
