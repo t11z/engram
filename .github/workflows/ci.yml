@@ -58,7 +58,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r lint
-      - run: pnpm -r exec tsc --noEmit
+      - run: pnpm -r run typecheck
       - run: pnpm -r test
       - run: pnpm -r build
 
