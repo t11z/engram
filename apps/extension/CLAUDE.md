@@ -24,6 +24,8 @@ Minimum surface, and **justify any expansion in the PR and the store listing**:
 
 - `activeTab` — read the current page only when the user invokes the clip action.
 - `storage` — persist the server URL and bearer token from the options page.
+- `contextMenus` — add a right-click entry on the toolbar icon to open the
+  configured server's web UI (no host permission needed; it opens a normal tab).
 - A **configurable host permission** for the user's server origin — not `<all_urls>`.
 
 Adding any permission requires a one-line justification in the PR description.
