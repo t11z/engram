@@ -26,7 +26,7 @@ tools, whether or not Bartleby is running.
 
 ## Screenshot
 
-> _TBD: screenshot of the web UI vault browser._
+<img width="1169" height="458" alt="image" src="https://github.com/user-attachments/assets/10990074-5519-4b38-abc2-67ecbc4a8137" />
 
 ## Quick start
 
