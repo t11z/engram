@@ -1,14 +1,11 @@
 # MCP tool reference
 
-!!! note "Hand-maintained for now"
-    Until the server exists, this page is maintained by hand from the
-    [implementation plan](https://github.com/t11z/bartleby/blob/main/docs/IMPLEMENTATION_PLAN.md).
-    Once the MCP endpoint ships, it will be generated from the running server so
-    descriptions never drift.
+Bartleby exposes five MCP tools at `/mcp` (Streamable HTTP). All operate on the
+same vault as the REST API. Authenticate with your `BARTLEBY_AUTH_TOKEN` via your
+client's standard MCP auth mechanism (sent as `Authorization: Bearer`).
 
-Bartleby exposes five MCP tools at `/mcp`. All operate on the same vault as the
-REST API. Authenticate with your `BARTLEBY_AUTH_TOKEN` via your client's standard
-MCP auth mechanism.
+The tool descriptions below are written for LLM consumption and mirror what the
+running server advertises.
 
 ### `save_note`
 

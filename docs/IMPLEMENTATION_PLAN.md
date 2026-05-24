@@ -303,9 +303,9 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 - [x] Consumes committed contract types; bundle served at `/`.
 
 ### Phase 5 — Polish + release
-- [ ] Docker image to GHCR via `release.yml`; extension artifacts attached to the Release.
-- [ ] Docs site filled out (install, configuration, MCP + API reference).
-- [ ] First tagged release `v0.1.0`; CHANGELOG cut.
+- [ ] Docker image to GHCR via `release.yml`; extension artifacts attached to the Release. *(completes when `v0.1.0` is tagged)*
+- [x] Docs site filled out (install, configuration, MCP + API reference).
+- [ ] First tagged release `v0.1.0`; CHANGELOG cut. *(CHANGELOG cut; tag is the maintainer's step)*
 
 ---
 
