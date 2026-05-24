@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the browser toolbar and the Chrome Web Store / Firefox AMO listings.
 
 ### Changed
-- Web UI favicon now uses the Bartleby quill brand mark (replacing the
-  placeholder `B` mark).
+- Web UI and documentation-site favicons now use the Bartleby quill brand mark
+  (replacing the placeholder `B` mark).
 
 ## [0.1.0] - 2026-05-24
 
