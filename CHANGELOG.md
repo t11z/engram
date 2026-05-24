@@ -29,5 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   requests the server-origin host permission at runtime; minimal permissions
   (`activeTab`, `storage`, `scripting`). No outbound calls except to the
   configured server.
+- `apps/web-ui`: a SvelteKit static SPA (Svelte 5, Tailwind v4) served by the
+  server at `/` — connect with a bearer token, browse notes (paginated), read a
+  note's Markdown (sanitized with DOMPurify), delete with confirm, full-text
+  search, and view/restore trashed notes. Single route with query-string state.
 
 [Unreleased]: https://github.com/t11z/bartleby/commits/main
