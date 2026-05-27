@@ -6,6 +6,7 @@ settings:
 
 overrides:
   cookie@<0.7.0: ^0.7.0
+  tmp@<0.2.7: ^0.2.7
   uuid@<11.1.1: ^11.1.1
 
 importers:
@@ -2520,8 +2521,8 @@ packages:
     resolution: {integrity: sha512-5eDV0tK2NhLAAqBeXDAQ36+EwuStd1HbsSOnGsp+JbExITnExcALLL5M1kTH8gjDYN5QvwmUWimE3GoMZ2A7xQ==}
     hasBin: true
 
-  tmp@0.2.5:
-    resolution: {integrity: sha512-voyz6MApa1rQGUxT3E+BK7/ROe8itEx7vD8/HEvt4xwXucvQ5G5oeEiHkmHZJuBO21RpOf+YYm9MOivj709jow==}
+  tmp@0.2.7:
+    resolution: {integrity: sha512-e0votIpp4Uo2AJYSzVHV6xCcawuiez3DzqDAbrTc3YxBkplN6e+dM13ZeIcZnDg/QpSuU2zfZ3rzwY8ukEnaXw==}
     engines: {node: '>=14.14'}
 
   totalist@3.0.1:
@@ -5175,7 +5176,7 @@ snapshots:
     dependencies:
       tldts-core: 7.0.32
 
-  tmp@0.2.5: {}
+  tmp@0.2.7: {}
 
   totalist@3.0.1: {}
 
@@ -5393,7 +5394,7 @@ snapshots:
       source-map-support: 0.5.21
       strip-bom: 5.0.0
       strip-json-comments: 5.0.2
-      tmp: 0.2.5
+      tmp: 0.2.7
       update-notifier: 7.3.1
       watchpack: 2.4.4
       zip-dir: 2.0.0
