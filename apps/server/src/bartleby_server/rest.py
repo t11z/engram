@@ -8,19 +8,34 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response
 
-from bartleby_core import Note, NoteCreate, NoteService
+from bartleby_core import LinkService, Note, NoteCreate, NoteService
 
-from .schemas import NoteListResponse, SearchResponse
-from .service import get_service
+from .schemas import LinkCreate, NoteListResponse, SearchResponse
+from .service import get_link_service, get_service
 
 router = APIRouter(prefix="/api/v1")
 
 ServiceDep = Annotated[NoteService, Depends(get_service)]
+LinkServiceDep = Annotated[LinkService, Depends(get_link_service)]
 
 
 @router.post("/notes", status_code=201, response_model=Note, responses={200: {"model": Note}})
 async def create_note(data: NoteCreate, response: Response, service: ServiceDep) -> Note:
     note, created = service.create(data)
+    response.status_code = 201 if created else 200
+    return note
+
+
+@router.post("/links", status_code=201, response_model=Note, responses={200: {"model": Note}})
+async def create_link(
+    data: LinkCreate, response: Response, service: LinkServiceDep
+) -> Note:
+    note, created = await service.create_from_link(
+        url=str(data.url),
+        tags=data.tags,
+        title_override=data.title,
+        idempotency_key=data.idempotency_key,
+    )
     response.status_code = 201 if created else 200
     return note
 

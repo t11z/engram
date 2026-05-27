@@ -13,11 +13,17 @@ from fastapi.responses import JSONResponse
 
 from bartleby_core.errors import (
     BartlebyError,
+    BlockedHost,
     IndexUnavailable,
     InvalidNote,
+    LinkExtractionFailed,
+    LinkTimeout,
+    LinkTooLarge,
+    LinkUnreachable,
     NoteAlreadyExists,
     NoteNotFound,
     NoteNotInTrash,
+    UnsupportedContentType,
     VaultError,
 )
 
@@ -28,6 +34,12 @@ _STATUS: dict[type[BartlebyError], tuple[int, str]] = {
     InvalidNote: (400, "invalid_note"),
     IndexUnavailable: (503, "index_unavailable"),
     VaultError: (500, "vault_error"),
+    BlockedHost: (400, "blocked_host"),
+    LinkUnreachable: (422, "link_unreachable"),
+    LinkTimeout: (504, "link_timeout"),
+    LinkTooLarge: (413, "link_too_large"),
+    UnsupportedContentType: (415, "unsupported_content_type"),
+    LinkExtractionFailed: (422, "extraction_failed"),
 }
 
 

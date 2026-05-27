@@ -17,12 +17,14 @@ read everything from a small UI — all against the same vault.
 
 The convenient way to give an assistant a memory is to hand your notes to someone
 else's server. Bartleby takes the other path: **you host it, you hold the data.**
-There is no hosted instance, no account, no tenant but you. The server makes no
-outbound calls — no telemetry, no update checks — and the browser extension talks
-only to the server you point it at. That single-user, self-hosted posture is the
-feature, not a limitation: your knowledge vault stays a directory of Markdown
-files on your own machine that you can read, back up, and move with ordinary
-tools, whether or not Bartleby is running.
+There is no hosted instance, no account, no tenant but you. There is no
+telemetry and no update pings; the only outbound calls the server makes are the
+ones you trigger yourself by sharing a URL into the vault (see [ADR-0005](./docs/adr/0005-server-side-url-fetch.md)),
+and the browser extension talks only to the server you point it at. That
+single-user, self-hosted posture is the feature, not a limitation: your
+knowledge vault stays a directory of Markdown files on your own machine that
+you can read, back up, and move with ordinary tools, whether or not Bartleby is
+running.
 
 ## Screenshot
 
@@ -55,9 +57,12 @@ flowchart LR
   L[LLM client] -->|MCP| S
   E[Browser extension] -->|REST + bearer| S
   W[Web UI] -->|REST + bearer| S
+  I_OS[iOS Shortcut] -->|REST + bearer| S
   S[Bartleby server] --> V[(Vault: Markdown + YAML on disk)]
   S --- I[(SQLite FTS5 index)]
 ```
+
+To share a URL from Safari on iPhone, see [`docs/ios-shortcut.md`](./docs/ios-shortcut.md).
 
 The full design — data model, API, storage, and roadmap — is in
 [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md).

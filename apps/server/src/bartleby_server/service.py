@@ -5,7 +5,7 @@ lifespan; read through ``get_service``.
 
 from __future__ import annotations
 
-from bartleby_core import NoteService
+from bartleby_core import LinkService, NoteService
 
 _service: NoteService | None = None
 
@@ -19,3 +19,7 @@ def get_service() -> NoteService:
     if _service is None:
         raise RuntimeError("NoteService is not initialized; the app lifespan has not run.")
     return _service
+
+
+def get_link_service() -> LinkService:
+    return LinkService(get_service())

@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   authorizing. The server now serves the advertised URL directly.
 
 ### Added
+- iOS share-sheet support via a new `POST /api/v1/links` endpoint. The server
+  fetches the supplied URL, extracts the article body to Markdown, and creates
+  a note through the existing write path — clients only have to send
+  `{ "url": "..." }` plus the bearer token. An Apple Shortcut recipe in
+  [`docs/ios-shortcut.md`](./docs/ios-shortcut.md) wires this into Safari's
+  share sheet without an App-Store app. The endpoint applies an SSRF guard
+  (rejecting loopback/private/link-local hosts, re-checked on every redirect),
+  a 5 MB size cap, a 10 s timeout, and an HTML-only Content-Type allowlist;
+  see [ADR-0005](./docs/adr/0005-server-side-url-fetch.md).
 - Optional embedded OAuth 2.1 authorization server so the MCP endpoint can be
   added to claude.ai (Web) as a Custom Connector. Opt in by setting
   `BARTLEBY_PUBLIC_URL` (the public HTTPS origin / token issuer) and
