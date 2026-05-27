@@ -8,22 +8,39 @@ higher layers (REST, MCP) should depend on. This package imports no web framewor
 from .config import Settings
 from .errors import (
     BartlebyError,
+    BlockedHost,
     IndexUnavailable,
     InvalidNote,
+    LinkExtractionFailed,
+    LinkFetchError,
+    LinkTimeout,
+    LinkTooLarge,
+    LinkUnreachable,
     NoteAlreadyExists,
     NoteNotFound,
     NoteNotInTrash,
+    UnsupportedContentType,
     VaultError,
 )
+from .link_extractor import ExtractedArticle, LinkFetchSettings, fetch_and_extract
 from .models import Note, NoteCreate, NoteMeta, NoteSummary, SearchResult
-from .service import NoteService, ReconcileReport, ReindexReport
+from .service import LinkService, NoteService, ReconcileReport, ReindexReport
 
 __version__ = "0.1.0"
 
 __all__ = [
     "BartlebyError",
+    "BlockedHost",
+    "ExtractedArticle",
     "IndexUnavailable",
     "InvalidNote",
+    "LinkExtractionFailed",
+    "LinkFetchError",
+    "LinkFetchSettings",
+    "LinkService",
+    "LinkTimeout",
+    "LinkTooLarge",
+    "LinkUnreachable",
     "Note",
     "NoteAlreadyExists",
     "NoteCreate",
@@ -36,6 +53,8 @@ __all__ = [
     "ReindexReport",
     "SearchResult",
     "Settings",
+    "UnsupportedContentType",
     "VaultError",
     "__version__",
+    "fetch_and_extract",
 ]

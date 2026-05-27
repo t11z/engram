@@ -49,3 +49,35 @@ class InvalidNote(BartlebyError):
         self.path = path
         self.reason = reason
         super().__init__(f"Invalid note {path!r}: {reason}")
+
+
+class LinkFetchError(BartlebyError):
+    """Base class for failures while importing a remote URL into the vault."""
+
+
+class BlockedHost(LinkFetchError):
+    """The requested URL targets a non-public host (loopback/private/reserved)
+    or uses a disallowed scheme. Refused before any outbound request.
+    """
+
+
+class LinkUnreachable(LinkFetchError):
+    """The remote host could not be reached, or returned a non-2xx response,
+    or supplied an invalid redirect.
+    """
+
+
+class LinkTimeout(LinkFetchError):
+    """The fetch exceeded the configured timeout."""
+
+
+class LinkTooLarge(LinkFetchError):
+    """The response body exceeded the configured byte cap."""
+
+
+class UnsupportedContentType(LinkFetchError):
+    """The response was not HTML (or a configured variant)."""
+
+
+class LinkExtractionFailed(LinkFetchError):
+    """The page was fetched but no article-like content could be extracted."""

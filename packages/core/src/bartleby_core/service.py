@@ -9,11 +9,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 
 from .config import Settings
 from .frontmatter import read_note_file
 from .ids import new_ulid
 from .index import SearchIndex
+from .link_extractor import LinkFetchSettings, fetch_and_extract
 from .models import Note, NoteCreate, NoteSummary, SearchResult
 from .store import VaultStore
 
@@ -175,3 +177,44 @@ class NoteService:
 
 def _changed(row: tuple[str, str, int, float, str | None], size: int, mtime: float) -> bool:
     return row[2] != size or abs(row[3] - mtime) > 1e-6
+
+
+class LinkService:
+    """Imports a remote URL into the vault by composing
+    :func:`fetch_and_extract` with :meth:`NoteService.create`. Vault and index
+    writes are owned entirely by ``NoteService``.
+    """
+
+    def __init__(
+        self,
+        note_service: NoteService,
+        *,
+        fetch_settings: LinkFetchSettings | None = None,
+    ) -> None:
+        self.note_service = note_service
+        self.fetch_settings = fetch_settings or LinkFetchSettings()
+
+    async def create_from_link(
+        self,
+        *,
+        url: str,
+        tags: list[str] | None = None,
+        title_override: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> tuple[Note, bool]:
+        article = await fetch_and_extract(url, settings=self.fetch_settings)
+        key = idempotency_key or _link_idempotency_key(url)
+        title = (title_override or "").strip() or article.title or url
+        return self.note_service.create(
+            NoteCreate(
+                title=title,
+                body=article.markdown,
+                tags=list(tags or []),
+                source_url=article.final_url,
+                idempotency_key=key,
+            )
+        )
+
+
+def _link_idempotency_key(url: str) -> str:
+    return "link:" + sha256(url.encode("utf-8")).hexdigest()[:16]

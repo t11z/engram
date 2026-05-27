@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Link */
+        post: operations["create_link_api_v1_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes": {
         parameters: {
             query?: never;
@@ -125,6 +142,23 @@ export interface components {
             version: string;
         };
         /**
+         * LinkCreate
+         * @description Input for ``POST /api/v1/links``: a URL the server should fetch and import.
+         */
+        LinkCreate: {
+            /** Idempotency Key */
+            idempotency_key?: string | null;
+            /** Tags */
+            tags?: string[];
+            /** Title */
+            title?: string | null;
+            /**
+             * Url
+             * Format: uri
+             */
+            url: string;
+        };
+        /**
          * Note
          * @description A full note: frontmatter plus the Markdown body and its vault-relative path.
          */
@@ -234,6 +268,48 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    create_link_api_v1_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_notes_api_v1_notes_get: {
         parameters: {
             query?: {
