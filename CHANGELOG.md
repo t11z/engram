@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Force the transitive `tmp` npm dependency (pulled in via `wxt` → `web-ext-run`)
+  to `^0.2.7` through a `pnpm.overrides` entry, picking up the upstream
+  sanitization of `prefix`/`postfix`/`dir` options that closes CVE-2026-44705
+  (path traversal out of the temp directory). Dependabot alert #3.
+
 ### Fixed
 - MCP transport is now reachable at the bare `/mcp` path, not only `/mcp/`. The
   OAuth protected-resource metadata advertises `<public_url>/mcp` (no trailing
