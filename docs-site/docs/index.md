@@ -1,3 +1,7 @@
+<p class="engram-hero">
+  <img class="engram-hero-mark" src="assets/engram-logomark.svg" alt="Engram" width="112" height="113">
+</p>
+
 # Engram
 
 *"I would prefer not to" — but it will, in fact, keep your notes.*

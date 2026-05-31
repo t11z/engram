@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Rolled the Engram design language (warm dark ink, amber accent, Quicksand /
+  IBM Plex type) onto the surfaces that still used the old look: the browser
+  extension's options page and the server's OAuth authorize page are now dark and
+  branded, and the brand mark appears in the documentation-site header and on the
+  landing-page hero. The extension toolbar icons and the web-UI / docs-site
+  favicons are regenerated from the amber logomark on a rounded ink "stamp"
+  (see `infra/render-brand-assets.py`), replacing the old quill-on-cream mark.
 - **Renamed the project from Bartleby to Engram.** This is a breaking change with
   no backward-compatibility shims: configuration env vars are now `ENGRAM_*`
   (previously `BARTLEBY_*`), the CLI command is `engram` (previously `bartleby`),
