@@ -29,6 +29,10 @@ jobs:
           python-version: "3.12"
       - run: pip install -r docs-site/requirements.txt
       - run: mkdocs build -f docs-site/mkdocs.yml --strict
+        env:
+          # Optional; when set, emits the Google Search Console verification
+          # meta tag. Configure via repo/environment secret of the same name.
+          GOOGLE_SITE_VERIFICATION: ${{ secrets.GOOGLE_SITE_VERIFICATION }}
 
       # Build the web UI in demo mode (in-memory mock data, no backend) and
       # publish it under /demo on the same Pages site.
