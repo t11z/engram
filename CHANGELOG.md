@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-31
+
+### Added
+- Browser-extension store-submission kit under `apps/extension/store/` (listing
+  copy, per-permission justifications, and a submission checklist) plus a public
+  privacy policy at `docs-site/docs/privacy.md`
+  (<https://t11z.github.io/engram/privacy/>), both required by the Chrome Web
+  Store and Firefox AMO. Release publishing is now automated by an opt-in
+  `publish-extension` job in `release.yml` that runs `wxt submit` for both
+  stores, gated on the `PUBLISH_EXTENSION` repository variable.
+- Extension icons (16/32/48/128) using the Engram quill brand mark, shown in
+  the browser toolbar and the Chrome Web Store / Firefox AMO listings.
+
 ### Changed
 - **Renamed the project from Bartleby to Engram.** This is a breaking change with
   no backward-compatibility shims: configuration env vars are now `ENGRAM_*`
@@ -17,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their `.env`, rename the systemd unit to `engram.service`, and rename the
   `.bartleby/` directory in each vault to `.engram/`. The Docker image is now
   `ghcr.io/t11z/engram`.
+- Web UI and documentation-site favicons now use the Engram quill brand mark
+  (replacing the placeholder `B` mark).
+
+### Fixed
+- Added stable keys to the Web UI's tag `{#each}` blocks, fixing Svelte
+  list-reconciliation warnings.
 
 ### Security
 - Force the transitive `tmp` npm dependency (pulled in via `wxt` → `web-ext-run`)
@@ -24,22 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sanitization of `prefix`/`postfix`/`dir` options that closes CVE-2026-44705
   (path traversal out of the temp directory). Dependabot alert #3.
 
-### Fixed
-- MCP transport is now reachable at the bare `/mcp` path, not only `/mcp/`. The
-  OAuth protected-resource metadata advertises `<public_url>/mcp` (no trailing
-  slash) and claude.ai connects to exactly that, but the mounted transport only
-  answered `/mcp/`, so a bare `/mcp` request fell through to the static-UI mount
-  (404 for `GET`, 405 for `POST`) and the connector failed right after
-  authorizing. The server now serves the advertised URL directly.
+## [0.2.1] - 2026-05-27
 
 ### Added
-- Browser-extension store-submission kit under `apps/extension/store/` (listing
-  copy, per-permission justifications, and a submission checklist) plus a public
-  privacy policy at `docs-site/docs/privacy.md`
-  (<https://t11z.github.io/engram/privacy/>), both required by the Chrome Web
-  Store and Firefox AMO. Release publishing is now automated by an opt-in
-  `publish-extension` job in `release.yml` that runs `wxt submit` for both
-  stores, gated on the `PUBLISH_EXTENSION` repository variable.
 - iOS share-sheet support via a new `POST /api/v1/links` endpoint. The server
   fetches the supplied URL, extracts the article body to Markdown, and creates
   a note through the existing write path — clients only have to send
@@ -49,6 +55,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (rejecting loopback/private/link-local hosts, re-checked on every redirect),
   a 5 MB size cap, a 10 s timeout, and an HTML-only Content-Type allowlist;
   see [ADR-0005](./docs/adr/0005-server-side-url-fetch.md).
+- Extension: a right-click "Open Engram server" entry on the toolbar icon's
+  context menu that opens the configured server's web UI in a new tab (or the
+  options page when no server is configured yet).
+
+### Fixed
+- MCP transport is now reachable at the bare `/mcp` path, not only `/mcp/`. The
+  OAuth protected-resource metadata advertises `<public_url>/mcp` (no trailing
+  slash) and claude.ai connects to exactly that, but the mounted transport only
+  answered `/mcp/`, so a bare `/mcp` request fell through to the static-UI mount
+  (404 for `GET`, 405 for `POST`) and the connector failed right after
+  authorizing. The server now serves the advertised URL directly.
+
+## [0.2.0] - 2026-05-24
+
+### Added
 - Optional embedded OAuth 2.1 authorization server so the MCP endpoint can be
   added to claude.ai (Web) as a Custom Connector. Opt in by setting
   `ENGRAM_PUBLIC_URL` (the public HTTPS origin / token issuer) and
@@ -58,15 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<vault>/.engram/oauth.db`. The static `ENGRAM_AUTH_TOKEN` keeps working —
   `/mcp` accepts either an OAuth token or the static token — and when
   `ENGRAM_PUBLIC_URL` is unset the server behaves exactly as before.
-- Extension icons (16/32/48/128) using the Engram quill brand mark, shown in
-  the browser toolbar and the Chrome Web Store / Firefox AMO listings.
-- Extension: a right-click "Open Engram server" entry on the toolbar icon's
-  context menu that opens the configured server's web UI in a new tab (or the
-  options page when no server is configured yet).
 
-### Changed
-- Web UI and documentation-site favicons now use the Engram quill brand mark
-  (replacing the placeholder `B` mark).
+## [0.1.1] - 2026-05-24
 
 ### Security
 - Resolve two Dependabot alerts in transitive npm dependencies via
@@ -103,5 +117,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   note's Markdown (sanitized with DOMPurify), delete with confirm, full-text
   search, and view/restore trashed notes. Single route with query-string state.
 
-[Unreleased]: https://github.com/t11z/engram/compare/v0.1.0...main
+[Unreleased]: https://github.com/t11z/engram/compare/v0.3.0...main
+[0.3.0]: https://github.com/t11z/engram/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/t11z/engram/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/t11z/engram/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/t11z/engram/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/t11z/engram/releases/tag/v0.1.0
