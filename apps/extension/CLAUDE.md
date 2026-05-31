@@ -23,12 +23,19 @@ in [`/docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md).
 Minimum surface, and **justify any expansion in the PR and the store listing**:
 
 - `activeTab` — read the current page only when the user invokes the clip action.
+- `scripting` — inject the one-off extractor into the active tab on user action
+  (`chrome.scripting.executeScript`); scoped to the tab `activeTab` just granted.
 - `storage` — persist the server URL and bearer token from the options page.
 - `contextMenus` — add a right-click entry on the toolbar icon to open the
   configured server's web UI (no host permission needed; it opens a normal tab).
 - A **configurable host permission** for the user's server origin — not `<all_urls>`.
+  Declared as `optional_host_permissions` and requested at runtime from the
+  options page for **only** the origin the user enters (`options/main.ts`). The
+  broad pattern is the requestable set (the self-hosted origin is unknown at
+  build time), never a default grant.
 
-Adding any permission requires a one-line justification in the PR description.
+Adding any permission requires a one-line justification in the PR description and
+an update to [`store/permissions.md`](./store/permissions.md).
 
 ## Build: Chrome + Firefox artifacts
 
@@ -60,9 +67,21 @@ service worker reads from `storage` on each clip (don't cache across worker
 restarts). There is no default server URL — an unconfigured extension does
 nothing until the user sets one.
 
+## Store submission
+
+Listing copy, permission justifications, and the submission checklist live in
+[`store/`](./store/). The privacy policy required by both stores is published at
+<https://t11z.github.io/bartleby/privacy/> (source:
+`docs-site/docs/privacy.md`). Publishing is automated by the opt-in
+`publish-extension` job in `.github/workflows/release.yml` (`wxt submit`, gated
+on the `PUBLISH_EXTENSION` repo variable); see
+[`store/README.md`](./store/README.md) for the required secrets.
+
 ## Before submitting a store update
 
-- Bump the version in `manifest.json` and note it in `CHANGELOG.md`.
-- Re-check the permission list is still minimal; update listing justifications.
+- Bump the version in `package.json` (WXT derives the manifest version from it)
+  and note it in `CHANGELOG.md`.
+- Re-check the permission list is still minimal; update
+  [`store/permissions.md`](./store/permissions.md) and the listing.
 - Rebuild both targets from a clean tree; test load-unpacked on both browsers.
 - Confirm no outbound call goes anywhere except the configured server.

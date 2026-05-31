@@ -43,4 +43,5 @@ nav:
   - Configuration: configuration.md
   - MCP tool reference: mcp-tools.md
   - API reference: api-reference.md
+  - Privacy: privacy.md
   - Changelog: changelog.md

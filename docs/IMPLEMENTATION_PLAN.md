@@ -309,6 +309,7 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 
 ### Phase 5 — Polish + release
 - [ ] Docker image to GHCR via `release.yml`; extension artifacts attached to the Release. *(completes when `v0.1.0` is tagged)*
+- [x] Store-submission kit (`apps/extension/store/`), privacy policy, and opt-in `wxt submit` publishing in `release.yml`.
 - [x] Docs site filled out (install, configuration, MCP + API reference).
 - [ ] First tagged release `v0.1.0`; CHANGELOG cut. *(CHANGELOG cut; tag is the maintainer's step)*
 
