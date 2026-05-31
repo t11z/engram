@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   authorizing. The server now serves the advertised URL directly.
 
 ### Added
+- Browser-extension store-submission kit under `apps/extension/store/` (listing
+  copy, per-permission justifications, and a submission checklist) plus a public
+  privacy policy at `docs-site/docs/privacy.md`
+  (<https://t11z.github.io/bartleby/privacy/>), both required by the Chrome Web
+  Store and Firefox AMO. Release publishing is now automated by an opt-in
+  `publish-extension` job in `release.yml` that runs `wxt submit` for both
+  stores, gated on the `PUBLISH_EXTENSION` repository variable.
 - iOS share-sheet support via a new `POST /api/v1/links` endpoint. The server
   fetches the supplied URL, extracts the article body to Markdown, and creates
   a note through the existing write path — clients only have to send

@@ -75,3 +75,46 @@ jobs:
           body_path: release-notes.md
           files: artifacts/*.zip
           generate_release_notes: false
+
+  # Opt-in store publishing. Runs only when the repo variable
+  # PUBLISH_EXTENSION == 'true', so tagging a release never publishes by
+  # accident. Secrets are documented in apps/extension/store/README.md.
+  publish-extension:
+    needs: release
+    if: ${{ vars.PUBLISH_EXTENSION == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build store-ready zips (Chrome + Firefox + sources)
+        run: |
+          pnpm --filter extension zip
+          pnpm --filter extension zip -b firefox
+      - name: Resolve artifact paths
+        run: |
+          cd apps/extension/dist
+          {
+            echo "CHROME_ZIP=$PWD/$(ls *chrome*.zip)"
+            echo "FIREFOX_ZIP=$PWD/$(ls *firefox*.zip | grep -v sources)"
+            echo "SOURCES_ZIP=$PWD/$(ls *sources*.zip)"
+          } >> "$GITHUB_ENV"
+      - name: Submit to Chrome Web Store and Firefox AMO
+        working-directory: apps/extension
+        run: |
+          pnpm exec wxt submit \
+            --chrome-zip "$CHROME_ZIP" \
+            --firefox-zip "$FIREFOX_ZIP" \
+            --firefox-sources-zip "$SOURCES_ZIP"
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
