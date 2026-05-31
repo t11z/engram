@@ -27,7 +27,7 @@
   <div class="mt-1.5 flex items-center gap-2">
     <span class="font-mono text-xs text-chalk-700">{item.updated_at}</span>
     {#if item.tags && item.tags.length}
-      {#each item.tags.slice(0, 3) as tag}
+      {#each item.tags.slice(0, 3) as tag (tag)}
         <span class="rounded bg-ink-700 px-1.5 py-px font-mono text-xs text-chalk-500">#{tag}</span>
       {/each}
     {/if}
