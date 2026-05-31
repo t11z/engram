@@ -57,8 +57,8 @@ jobs:
       - name: Package zips
         run: |
           mkdir -p artifacts
-          (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/bartleby-extension-chrome-${{ github.ref_name }}.zip" .)
-          (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/bartleby-extension-firefox-${{ github.ref_name }}.zip" .)
+          (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-chrome-${{ github.ref_name }}.zip" .)
+          (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-firefox-${{ github.ref_name }}.zip" .)
       - name: Extract release notes from CHANGELOG
         run: |
           version="${GITHUB_REF_NAME#v}"

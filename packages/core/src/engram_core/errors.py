@@ -6,11 +6,11 @@ Nothing here imports a web framework.
 from __future__ import annotations
 
 
-class BartlebyError(Exception):
-    """Base class for all Bartleby domain errors."""
+class EngramError(Exception):
+    """Base class for all Engram domain errors."""
 
 
-class NoteNotFound(BartlebyError):
+class NoteNotFound(EngramError):
     """No live note exists with the given id."""
 
     def __init__(self, note_id: str) -> None:
@@ -18,7 +18,7 @@ class NoteNotFound(BartlebyError):
         super().__init__(f"No note with id {note_id!r}.")
 
 
-class NoteNotInTrash(BartlebyError):
+class NoteNotInTrash(EngramError):
     """The note to restore is not in the trash."""
 
     def __init__(self, note_id: str) -> None:
@@ -26,7 +26,7 @@ class NoteNotInTrash(BartlebyError):
         super().__init__(f"No trashed note with id {note_id!r}.")
 
 
-class NoteAlreadyExists(BartlebyError):
+class NoteAlreadyExists(EngramError):
     """A note with the given id already exists (ULID collision; effectively never)."""
 
     def __init__(self, note_id: str) -> None:
@@ -34,15 +34,15 @@ class NoteAlreadyExists(BartlebyError):
         super().__init__(f"A note with id {note_id!r} already exists.")
 
 
-class VaultError(BartlebyError):
+class VaultError(EngramError):
     """A filesystem-level vault failure."""
 
 
-class IndexUnavailable(BartlebyError):
+class IndexUnavailable(EngramError):
     """The SQLite build lacks FTS5 support, so the search index cannot be opened."""
 
 
-class InvalidNote(BartlebyError):
+class InvalidNote(EngramError):
     """A note file could not be parsed or failed validation."""
 
     def __init__(self, path: str, reason: str) -> None:
@@ -51,7 +51,7 @@ class InvalidNote(BartlebyError):
         super().__init__(f"Invalid note {path!r}: {reason}")
 
 
-class LinkFetchError(BartlebyError):
+class LinkFetchError(EngramError):
     """Base class for failures while importing a remote URL into the vault."""
 
 

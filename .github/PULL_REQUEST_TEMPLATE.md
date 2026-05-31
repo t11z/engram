@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to Bartleby. -->
+<!-- Thanks for contributing to Engram. -->
 
 ## Summary
 

@@ -1,7 +1,7 @@
 [project]
-name = "bartleby"
+name = "engram"
 version = "0.0.0"
-description = "Bartleby workspace root (umbrella; not a distributable package)."
+description = "Engram workspace root (umbrella; not a distributable package)."
 requires-python = ">=3.12"
 dependencies = []
 
@@ -12,13 +12,13 @@ package = false
 members = ["packages/core", "apps/server"]
 
 [tool.uv.sources]
-bartleby-core = { workspace = true }
-bartleby-server = { workspace = true }
+engram-core = { workspace = true }
+engram-server = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "bartleby-core",
-    "bartleby-server",
+    "engram-core",
+    "engram-server",
     "pytest>=8.3",
     "mypy>=1.13",
     "ruff>=0.8",

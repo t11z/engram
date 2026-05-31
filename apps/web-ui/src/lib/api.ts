@@ -1,4 +1,4 @@
-import type { components } from "@bartleby/contract";
+import type { components } from "@engram/contract";
 
 import { currentToken, disconnect } from "./auth";
 

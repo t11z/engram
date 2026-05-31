@@ -31,14 +31,14 @@ under the access granted by activeTab.
 
 ```
 Used to persist the user's two settings on their device: the URL of their
-self-hosted Bartleby server and the bearer token used to authenticate to it.
+self-hosted Engram server and the bearer token used to authenticate to it.
 No other data is stored and nothing is synced to third parties.
 ```
 
 ## contextMenus
 
 ```
-Adds a single "Open Bartleby server" entry to the toolbar icon's right-click
+Adds a single "Open Engram server" entry to the toolbar icon's right-click
 menu, which opens the user's configured server in a new tab. No host permission
 is needed for this.
 ```
@@ -47,7 +47,7 @@ is needed for this.
 
 ```
 This is an OPTIONAL host permission and is NOT granted by default. The extension
-saves notes by POSTing to the user's own Bartleby server, whose origin is not
+saves notes by POSTing to the user's own Engram server, whose origin is not
 known at build time (users self-host on arbitrary domains, LAN addresses, or
 ports, over http or https). When the user enters their server URL on the options
 page, the extension requests host access for ONLY that single origin via

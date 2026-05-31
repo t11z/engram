@@ -9,8 +9,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from bartleby_core import LinkFetchSettings, LinkService
-from bartleby_server.service import get_link_service, get_service
+from engram_core import LinkFetchSettings, LinkService
+from engram_server.service import get_link_service, get_service
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -21,7 +21,7 @@ ARTICLE_HTML = """
 </head><body>
   <article>
     <h1>A Real Title</h1>
-    <p>Bartleby ingests a URL and stores the extracted article in the vault as
+    <p>Engram ingests a URL and stores the extracted article in the vault as
     Markdown. This paragraph exists so trafilatura's heuristics consider the
     page meaningful enough to extract. Another sentence, for length.</p>
     <p>Second paragraph with a <a href="https://example.com/x">link</a>.</p>
@@ -92,7 +92,7 @@ def test_create_link_returns_201_with_note(
     note = r.json()
     assert note["title"] == "A Real Title"
     assert note["source_url"] == "https://example.com/article"
-    assert "bartleby ingests" in note["body"].lower()
+    assert "engram ingests" in note["body"].lower()
     assert len(note["id"]) == 26
 
 

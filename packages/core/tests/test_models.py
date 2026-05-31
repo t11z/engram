@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from bartleby_core.models import (
+from engram_core.models import (
     Note,
     NoteMeta,
     NoteSummary,

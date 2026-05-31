@@ -1,5 +1,5 @@
 name: Question / support
-description: Ask how to use or configure Bartleby.
+description: Ask how to use or configure Engram.
 title: "question: <short description>"
 labels: ["question"]
 body:

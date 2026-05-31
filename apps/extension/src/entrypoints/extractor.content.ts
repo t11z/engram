@@ -5,7 +5,7 @@ import { defineContentScript } from "wxt/utils/define-content-script";
 import { htmlToMarkdown } from "@/lib/markdown";
 import type { ExtractResponse } from "@/lib/messaging";
 
-const EXTRACT_MESSAGE = "bartleby:extract";
+const EXTRACT_MESSAGE = "engram:extract";
 
 function extract(): ExtractResponse {
   try {
@@ -28,9 +28,9 @@ export default defineContentScript({
   matches: [],
   registration: "runtime",
   main() {
-    const flagged = window as unknown as { __bartlebyExtractorReady?: boolean };
-    if (flagged.__bartlebyExtractorReady) return;
-    flagged.__bartlebyExtractorReady = true;
+    const flagged = window as unknown as { __engramExtractorReady?: boolean };
+    if (flagged.__engramExtractorReady) return;
+    flagged.__engramExtractorReady = true;
     chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
       if ((message as { type?: string } | null)?.type === EXTRACT_MESSAGE) {
         sendResponse(extract());

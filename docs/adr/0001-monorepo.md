@@ -5,7 +5,7 @@
 
 ## Context and problem statement
 
-Bartleby ships several components that must move together: a Python core library,
+Engram ships several components that must move together: a Python core library,
 a FastAPI server, a SvelteKit web UI, a browser extension, and a generated
 API contract shared between server and clients. We need to decide whether these
 live in one repository or several. The contract in particular couples the server

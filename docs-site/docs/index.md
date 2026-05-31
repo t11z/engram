@@ -1,8 +1,8 @@
-# Bartleby
+# Engram
 
 *"I would prefer not to" — but it will, in fact, keep your notes.*
 
-Bartleby is a self-hosted personal knowledge vault that any LLM can read and
+Engram is a self-hosted personal knowledge vault that any LLM can read and
 write through the [Model Context Protocol](https://modelcontextprotocol.io). Your
 notes are plain Markdown files on a server you control. One process exposes three
 surfaces over the same vault:
@@ -14,7 +14,7 @@ surfaces over the same vault:
 ## Why self-hosted
 
 The convenient way to give an assistant a memory is to hand your notes to someone
-else's server. Bartleby takes the other path: you host it, you hold the data.
+else's server. Engram takes the other path: you host it, you hold the data.
 There is no hosted instance and no account — one user, one server. The server
 makes no outbound calls: no telemetry, no update checks. Your vault stays a
 directory of Markdown files you can read, back up, and move with ordinary tools.
@@ -29,6 +29,6 @@ directory of Markdown files you can read, back up, and move with ordinary tools.
 ## Project status
 
 Pre-1.0 and under active development. The design and roadmap are in the
-[implementation plan](https://github.com/t11z/bartleby/blob/main/docs/IMPLEMENTATION_PLAN.md).
+[implementation plan](https://github.com/t11z/engram/blob/main/docs/IMPLEMENTATION_PLAN.md).
 The MCP server is spec-compliant and tested primarily with Claude; please file an
 issue if another MCP client misbehaves.

@@ -9,7 +9,7 @@
 
 <header class="border-b">
   <nav class="mx-auto flex max-w-6xl items-center gap-4 p-4">
-    <span class="font-serif text-lg">Bartleby</span>
+    <span class="font-serif text-lg">Engram</span>
     <button class:font-semibold={nav.view === "list"} onclick={() => navTo({ view: null, note: null, q: null, tag: null })}>
       Notes
     </button>

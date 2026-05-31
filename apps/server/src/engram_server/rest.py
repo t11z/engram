@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Response
 
-from bartleby_core import LinkService, Note, NoteCreate, NoteService
+from engram_core import LinkService, Note, NoteCreate, NoteService
 
 from .schemas import LinkCreate, NoteListResponse, SearchResponse
 from .service import get_link_service, get_service

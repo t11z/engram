@@ -14,14 +14,14 @@ export default defineConfig({
   outDirTemplate: "{{browser}}",
   // Single alias source for both tsc (baked into .wxt/tsconfig.json) and Vite.
   alias: {
-    "@bartleby/contract": contractTypes,
+    "@engram/contract": contractTypes,
   },
   vite: () => ({
     build: { sourcemap: true },
   }),
   manifest: {
-    name: "Bartleby",
-    description: "Clip the active tab to Markdown and save it to your Bartleby server.",
+    name: "Engram",
+    description: "Clip the active tab to Markdown and save it to your Engram server.",
     action: {
       default_icon: {
         "16": "icon/16.png",
@@ -34,7 +34,7 @@ export default defineConfig({
     optional_host_permissions: ["*://*/*"],
     browser_specific_settings: {
       gecko: {
-        id: "bartleby@t11z.github.io",
+        id: "engram@t11z.github.io",
       },
     },
   },

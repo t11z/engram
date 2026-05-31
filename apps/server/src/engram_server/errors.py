@@ -11,9 +11,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from bartleby_core.errors import (
-    BartlebyError,
+from engram_core.errors import (
     BlockedHost,
+    EngramError,
     IndexUnavailable,
     InvalidNote,
     LinkExtractionFailed,
@@ -27,7 +27,7 @@ from bartleby_core.errors import (
     VaultError,
 )
 
-_STATUS: dict[type[BartlebyError], tuple[int, str]] = {
+_STATUS: dict[type[EngramError], tuple[int, str]] = {
     NoteNotFound: (404, "not_found"),
     NoteNotInTrash: (404, "not_in_trash"),
     NoteAlreadyExists: (409, "already_exists"),
@@ -48,8 +48,8 @@ def envelope(status: int, code: str, message: str) -> JSONResponse:
 
 
 def install_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(BartlebyError)
-    async def _bartleby(_: Request, exc: BartlebyError) -> JSONResponse:
+    @app.exception_handler(EngramError)
+    async def _engram(_: Request, exc: EngramError) -> JSONResponse:
         status, code = _STATUS.get(type(exc), (500, "internal_error"))
         return envelope(status, code, str(exc))
 

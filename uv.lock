@@ -8,9 +8,9 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "bartleby",
-    "bartleby-core",
-    "bartleby-server",
+    "engram",
+    "engram-core",
+    "engram-server",
 ]
 
 [[package]]
@@ -100,85 +100,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7d/b2/51899539b6ceeeb420d40ed3cd4b7a40519404f9baf3d4ac99dc413a834b/babel-2.18.0.tar.gz", hash = "sha256:b80b99a14bd085fcacfa15c9165f651fbb3406e66cc603abf11c5750937c992d", size = 9959554, upload-time = "2026-02-01T12:30:56.078Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/f5/21d2de20e8b8b0408f0681956ca2c69f1320a3848ac50e6e7f39c6159675/babel-2.18.0-py3-none-any.whl", hash = "sha256:e2b422b277c2b9a9630c1d7903c2a00d0830c409c59ac8cae9081c92f1aeba35", size = 10196845, upload-time = "2026-02-01T12:30:53.445Z" },
-]
-
-[[package]]
-name = "bartleby"
-version = "0.0.0"
-source = { virtual = "." }
-
-[package.dev-dependencies]
-dev = [
-    { name = "bartleby-core" },
-    { name = "bartleby-server" },
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "bartleby-core", editable = "packages/core" },
-    { name = "bartleby-server", editable = "apps/server" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "mypy", specifier = ">=1.13" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "ruff", specifier = ">=0.8" },
-    { name = "types-pyyaml", specifier = ">=6" },
-]
-
-[[package]]
-name = "bartleby-core"
-version = "0.1.0"
-source = { editable = "packages/core" }
-dependencies = [
-    { name = "beautifulsoup4" },
-    { name = "httpx" },
-    { name = "markdownify" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-frontmatter" },
-    { name = "python-ulid" },
-    { name = "trafilatura" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.12,<5" },
-    { name = "httpx", specifier = ">=0.27,<1" },
-    { name = "markdownify", specifier = ">=0.13,<2" },
-    { name = "pydantic", specifier = ">=2.11,<3" },
-    { name = "pydantic-settings", specifier = ">=2.7,<3" },
-    { name = "python-frontmatter", specifier = ">=1.1,<2" },
-    { name = "python-ulid", specifier = ">=3.0,<4" },
-    { name = "trafilatura", specifier = ">=1.12,<3" },
-]
-
-[[package]]
-name = "bartleby-server"
-version = "0.1.0"
-source = { editable = "apps/server" }
-dependencies = [
-    { name = "bartleby-core" },
-    { name = "fastapi" },
-    { name = "mcp" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "bartleby-core", editable = "packages/core" },
-    { name = "fastapi", specifier = ">=0.115,<1" },
-    { name = "mcp", specifier = ">=1.27,<2" },
-    { name = "pydantic", specifier = ">=2.11,<3" },
-    { name = "pydantic-settings", specifier = ">=2.7,<3" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32,<1" },
 ]
 
 [[package]]
@@ -434,6 +355,85 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/46/2d/a0ccdb78788064fa0dc901b8524e50615c42be1d78b78d646d0b28d09180/dateparser-1.4.0.tar.gz", hash = "sha256:97a21840d5ecdf7630c584f673338a5afac5dfe84f647baf4d7e8df98f9354a4", size = 321512, upload-time = "2026-03-26T09:56:10.292Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b4/0b/3c3bb7cbe757279e693a0be6049048012f794d01f81099609ecd53b899f0/dateparser-1.4.0-py3-none-any.whl", hash = "sha256:7902b8e85d603494bf70a5a0b1decdddb2270b9c6e6b2bc8a57b93476c0df378", size = 300379, upload-time = "2026-03-26T09:56:08.409Z" },
+]
+
+[[package]]
+name = "engram"
+version = "0.0.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "engram-core" },
+    { name = "engram-server" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "engram-core", editable = "packages/core" },
+    { name = "engram-server", editable = "apps/server" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mypy", specifier = ">=1.13" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "ruff", specifier = ">=0.8" },
+    { name = "types-pyyaml", specifier = ">=6" },
+]
+
+[[package]]
+name = "engram-core"
+version = "0.1.0"
+source = { editable = "packages/core" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "httpx" },
+    { name = "markdownify" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-frontmatter" },
+    { name = "python-ulid" },
+    { name = "trafilatura" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.12,<5" },
+    { name = "httpx", specifier = ">=0.27,<1" },
+    { name = "markdownify", specifier = ">=0.13,<2" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
+    { name = "pydantic-settings", specifier = ">=2.7,<3" },
+    { name = "python-frontmatter", specifier = ">=1.1,<2" },
+    { name = "python-ulid", specifier = ">=3.0,<4" },
+    { name = "trafilatura", specifier = ">=1.12,<3" },
+]
+
+[[package]]
+name = "engram-server"
+version = "0.1.0"
+source = { editable = "apps/server" }
+dependencies = [
+    { name = "engram-core" },
+    { name = "fastapi" },
+    { name = "mcp" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "engram-core", editable = "packages/core" },
+    { name = "fastapi", specifier = ">=0.115,<1" },
+    { name = "mcp", specifier = ">=1.27,<2" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
+    { name = "pydantic-settings", specifier = ">=2.7,<3" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32,<1" },
 ]
 
 [[package]]

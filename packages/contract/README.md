@@ -1,4 +1,4 @@
-# Bartleby API contract
+# Engram API contract
 
 Generated artifacts — **do not hand-edit**. They are committed so the browser
 extension and web UI can consume the API types without running Python.
@@ -9,7 +9,7 @@ extension and web UI can consume the API types without running Python.
 ## Regenerate
 
 ```bash
-uv run bartleby-export-openapi packages/contract/openapi.json
+uv run engram-export-openapi packages/contract/openapi.json
 pnpm exec openapi-typescript packages/contract/openapi.json -o packages/contract/types.ts
 ```
 

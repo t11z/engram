@@ -35,7 +35,7 @@ from .store import OAuthStore
 LOGIN_PATH = "/oauth/login"
 
 
-class BartlebyOAuthProvider:
+class EngramOAuthProvider:
     """Concrete provider satisfying ``OAuthAuthorizationServerProvider``."""
 
     def __init__(self, store: OAuthStore, public_url: str) -> None:

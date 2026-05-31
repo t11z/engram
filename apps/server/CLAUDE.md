@@ -10,9 +10,9 @@ this practical.
 ## Run locally against the sample vault
 
 ```bash
-BARTLEBY_VAULT_PATH=../../packages/core/tests/fixtures/sample-vault \
-BARTLEBY_AUTH_TOKEN=dev \
-uv run bartleby
+ENGRAM_VAULT_PATH=../../packages/core/tests/fixtures/sample-vault \
+ENGRAM_AUTH_TOKEN=dev \
+uv run engram
 ```
 
 REST at `http://localhost:8080/api/v1`, MCP at `/mcp`, UI at `/`. Health at
@@ -48,7 +48,7 @@ REST at `http://localhost:8080/api/v1`, MCP at `/mcp`, UI at `/`. Health at
 ## Storage layer
 
 `packages/core` owns it behind a `VaultStore`: Markdown + YAML frontmatter is the
-source of truth; a rebuildable SQLite FTS5 index (default `<vault>/.bartleby/index.db`)
+source of truth; a rebuildable SQLite FTS5 index (default `<vault>/.engram/index.db`)
 accelerates search via write-through + startup reconciliation + `reindex`. The
 server never touches the index directly — go through a `core` service.
 

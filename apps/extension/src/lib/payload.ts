@@ -1,4 +1,4 @@
-import type { components } from "@bartleby/contract";
+import type { components } from "@engram/contract";
 
 export type NoteCreate = components["schemas"]["NoteCreate"];
 

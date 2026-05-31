@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from bartleby_core.index import SearchIndex
-from bartleby_core.models import Note
+from engram_core.index import SearchIndex
+from engram_core.models import Note
 
 BASE = datetime(2026, 5, 1, 12, 0, tzinfo=UTC)
 

@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 
-const KEY = "bartleby_token";
+const KEY = "engram_token";
 
 function load(): string | null {
   if (typeof localStorage === "undefined") return null;

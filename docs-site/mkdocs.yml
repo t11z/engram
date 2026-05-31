@@ -1,8 +1,8 @@
-site_name: Bartleby
+site_name: Engram
 site_description: A self-hosted personal knowledge vault that any LLM can read and write through the Model Context Protocol.
-site_url: https://t11z.github.io/bartleby/
-repo_url: https://github.com/t11z/bartleby
-repo_name: t11z/bartleby
+site_url: https://t11z.github.io/engram/
+repo_url: https://github.com/t11z/engram
+repo_name: t11z/engram
 copyright: "&copy; Thomas Sprock — MIT licensed"
 
 theme:

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "description": "Bartleby browser extension (MV3): clip the active tab to Markdown.",
+  "description": "Engram browser extension (MV3): clip the active tab to Markdown.",
   "scripts": {
     "postinstall": "wxt prepare",
     "dev": "wxt",

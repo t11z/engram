@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 import pytest
 
-from bartleby_core.errors import (
+from engram_core.errors import (
     BlockedHost,
     LinkExtractionFailed,
     LinkTimeout,
@@ -15,7 +15,7 @@ from bartleby_core.errors import (
     LinkUnreachable,
     UnsupportedContentType,
 )
-from bartleby_core.link_extractor import (
+from engram_core.link_extractor import (
     LinkFetchSettings,
     fetch_and_extract,
 )

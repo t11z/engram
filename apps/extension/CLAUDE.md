@@ -71,7 +71,7 @@ nothing until the user sets one.
 
 Listing copy, permission justifications, and the submission checklist live in
 [`store/`](./store/). The privacy policy required by both stores is published at
-<https://t11z.github.io/bartleby/privacy/> (source:
+<https://t11z.github.io/engram/privacy/> (source:
 `docs-site/docs/privacy.md`). Publishing is automated by the opt-in
 `publish-extension` job in `.github/workflows/release.yml` (`wxt submit`, gated
 on the `PUBLISH_EXTENSION` repo variable); see

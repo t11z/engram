@@ -11,7 +11,7 @@ No file changes without a tracking issue. The loop:
 1. **Create a GitHub issue** for the change.
 2. **Record it** so the local guard passes:
    `echo "<issue-url-or-number>" > .claude/state/active-issue`
-   (or `export BARTLEBY_ACTIVE_ISSUE=<issue>`).
+   (or `export ENGRAM_ACTIVE_ISSUE=<issue>`).
 3. **Branch**: `git checkout -b <type>/<short-description>`.
 4. **Implement** with tests; run the checks below.
 5. **Open the PR** with `Closes #<issue>` in the body.
@@ -44,7 +44,7 @@ whose project files are absent.
 ## Local dev loop (server + ui + extension)
 
 - **Server** against the sample vault:
-  `BARTLEBY_VAULT_PATH=packages/core/tests/fixtures/sample-vault BARTLEBY_AUTH_TOKEN=dev uv run bartleby` (see `apps/server/CLAUDE.md`).
+  `ENGRAM_VAULT_PATH=packages/core/tests/fixtures/sample-vault ENGRAM_AUTH_TOKEN=dev uv run engram` (see `apps/server/CLAUDE.md`).
 - **Web UI**: `pnpm --filter web-ui dev`, proxying the API to the server.
 - **Extension**: build, then load unpacked (see `apps/extension/CLAUDE.md`).
 

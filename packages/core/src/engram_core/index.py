@@ -78,7 +78,7 @@ class SearchIndex:
             conn.close()
             if "fts5" in str(exc).lower():
                 raise IndexUnavailable(
-                    "This SQLite build lacks FTS5 support, which Bartleby requires."
+                    "This SQLite build lacks FTS5 support, which Engram requires."
                 ) from exc
             raise
         conn.commit()

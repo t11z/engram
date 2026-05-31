@@ -11,7 +11,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
-from bartleby_core import NoteCreate
+from engram_core import NoteCreate
 
 from .service import get_service
 
@@ -81,7 +81,7 @@ def build_mcp() -> FastMCP:
     arbitrary host that the default allowlist would reject.
     """
     mcp = FastMCP(
-        "Bartleby",
+        "Engram",
         json_response=True,
         streamable_http_path="/",
         transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),

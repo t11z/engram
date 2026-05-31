@@ -1,4 +1,4 @@
-"""``python -m bartleby_core.reindex`` — rebuild the search index from the vault.
+"""``python -m engram_core.reindex`` — rebuild the search index from the vault.
 
 A minimal recovery entry point for use before the server exists. It claims no
 user-facing command name; that is reserved for the server phase.
@@ -15,11 +15,11 @@ from .service import NoteService
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="bartleby_core.reindex",
-        description="Rebuild the Bartleby search index from the vault files.",
+        prog="engram_core.reindex",
+        description="Rebuild the Engram search index from the vault files.",
     )
-    parser.add_argument("--vault", type=Path, default=None, help="Override BARTLEBY_VAULT_PATH.")
-    parser.add_argument("--index", type=Path, default=None, help="Override BARTLEBY_INDEX_PATH.")
+    parser.add_argument("--vault", type=Path, default=None, help="Override ENGRAM_VAULT_PATH.")
+    parser.add_argument("--index", type=Path, default=None, help="Override ENGRAM_INDEX_PATH.")
     args = parser.parse_args(argv)
 
     settings = Settings()
