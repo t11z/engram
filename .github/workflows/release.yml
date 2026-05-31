@@ -4,6 +4,16 @@ on:
   push:
     tags:
       - "v*.*.*"
+  # Manual re-run that regenerates the release notes for an existing tag from
+  # the current CHANGELOG. Updates only the release body — it does not rebuild
+  # the Docker image, re-upload assets, or submit to the extension stores. Use
+  # it to backfill releases whose notes predate a CHANGELOG fix.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to regenerate release notes for (e.g. v0.2.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,6 +24,7 @@ env:
 
 jobs:
   docker:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -41,47 +52,60 @@ jobs:
 
   release:
     needs: docker
+    # On a tag push, wait for the Docker build. On a manual dispatch the docker
+    # job is skipped, so guard against that skip cascading to this job.
+    if: ${{ always() && (github.event_name != 'push' || needs.docker.result == 'success') }}
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
+        if: github.event_name == 'push'
       - uses: actions/setup-node@v6
+        if: github.event_name == 'push'
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+        if: github.event_name == 'push'
       - name: Build store-ready artifacts (Chrome + Firefox)
+        if: github.event_name == 'push'
         run: |
           pnpm --filter extension build:chrome
           pnpm --filter extension build:firefox
       - name: Package zips
+        if: github.event_name == 'push'
         run: |
           mkdir -p artifacts
-          (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-chrome-${{ github.ref_name }}.zip" .)
-          (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-firefox-${{ github.ref_name }}.zip" .)
+          (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-chrome-${TAG}.zip" .)
+          (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-firefox-${TAG}.zip" .)
       - name: Extract release notes from CHANGELOG
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           awk -v v="$version" '
             $0 ~ "^## \\[" v "\\]" {grab=1; next}
             grab && /^## \[/ {exit}
             grab {print}
           ' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ]; then
-            echo "No CHANGELOG section for $version; see CHANGELOG.md." > release-notes.md
-          fi
+      # When the CHANGELOG carries a section for this version it becomes the
+      # release body; GitHub then appends the auto-generated "What's Changed"
+      # list (generate_release_notes). When the section is missing the body is
+      # empty, so the release still gets the auto-generated PR/commit list
+      # instead of a dead-end placeholder.
       - uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ env.TAG }}
           body_path: release-notes.md
-          files: artifacts/*.zip
-          generate_release_notes: false
+          files: ${{ github.event_name == 'push' && 'artifacts/*.zip' || '' }}
+          generate_release_notes: true
 
   # Opt-in store publishing. Runs only when the repo variable
   # PUBLISH_EXTENSION == 'true', so tagging a release never publishes by
   # accident. Secrets are documented in apps/extension/store/README.md.
   publish-extension:
     needs: release
-    if: ${{ vars.PUBLISH_EXTENSION == 'true' }}
+    if: ${{ github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
