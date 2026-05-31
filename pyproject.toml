@@ -34,6 +34,12 @@ src = ["packages/core/src", "packages/core/tests", "apps/server/src", "apps/serv
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "TID", "RUF"]
 
+[tool.ruff.lint.per-file-ignores]
+# Embeds the brand mark as an inline SVG path and a self-contained HTML
+# template (kept inline so the OAuth authorize page needs no static mount),
+# both of which exceed the line-length limit.
+"apps/server/src/engram_server/oauth/login.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
@@ -46,7 +52,7 @@ files = [
     "apps/server/src",
     "apps/server/tests",
 ]
-exclude = ['^\.venv/', '^build/', '^dist/']
+exclude = ['^\.venv/', '^build/', '^dist/', '^infra/']
 
 [[tool.mypy.overrides]]
 module = ["frontmatter.*"]
