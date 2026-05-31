@@ -251,6 +251,26 @@
   border: 1px solid #322A20;
 }
 
+/* ── Header logo ── */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+/* ── Landing-page hero mark ── */
+.engram-hero {
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.engram-hero-mark {
+  width: 112px;
+  height: auto;
+  filter: drop-shadow(0 0 28px rgba(217, 152, 63, 0.28));
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0B0907; }

@@ -7,6 +7,7 @@ copyright: "&copy; Thomas Sprock — MIT licensed"
 
 theme:
   name: material
+  logo: assets/engram-logomark.svg
   favicon: assets/favicon.png
   font:
     text: IBM Plex Sans
