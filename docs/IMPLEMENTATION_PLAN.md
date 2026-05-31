@@ -23,7 +23,9 @@ backend process exposes three surfaces:
 Decisions of record (not up for revision in v1):
 
 - **Topology.** Public monorepo, MIT licensed, self-hosted per user. One user,
-  one server, their own machine. No multi-tenancy, no accounts, no hosted demo.
+  one server, their own machine. No multi-tenancy, no accounts, no hosted
+  *backend* demo. (A static, client-only demo with mock data and no server is
+  fine — see [ADR-0006](./adr/0006-static-mock-demo.md).)
 - **Single process.** MCP, REST, and static UI are served by one FastAPI app.
   Rationale in [ADR-0002](./adr/0002-mcp-rest-coexist.md).
 - **Storage.** Markdown files on disk with YAML frontmatter; the filesystem is

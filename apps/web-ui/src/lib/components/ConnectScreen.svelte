@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { base } from "$app/paths";
+
   import { connect } from "$lib/auth";
 
   let value = $state("");
@@ -14,8 +16,8 @@
   <div class="w-full max-w-sm">
     <!-- Logo -->
     <div class="mb-8 flex flex-col items-center gap-4">
-      <img src="/engram-logomark.svg" alt="" class="h-14 w-14" style="filter: drop-shadow(0 0 18px rgba(217,152,63,0.22));" />
-      <img src="/engram-wordmark-trans.png" alt="engram" class="h-5 w-auto opacity-80" />
+      <img src="{base}/engram-logomark.svg" alt="" class="h-14 w-14" style="filter: drop-shadow(0 0 18px rgba(217,152,63,0.22));" />
+      <img src="{base}/engram-wordmark-trans.png" alt="engram" class="h-5 w-auto opacity-80" />
     </div>
 
     <!-- Card -->

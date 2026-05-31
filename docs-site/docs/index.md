@@ -15,6 +15,13 @@ surfaces over the same vault:
 - **REST** at `/api/v1` — for the browser extension and web UI.
 - **Web UI** at `/` — browse and read your vault.
 
+!!! tip "Try the web UI now"
+
+    See the interface without installing anything: the
+    [**live demo**](https://t11z.github.io/engram/demo/) runs the real web UI
+    against built-in sample data, entirely in your browser. Nothing is sent
+    anywhere; changes reset on reload.
+
 ## Why self-hosted
 
 The convenient way to give an assistant a memory is to hand your notes to someone

@@ -26,9 +26,11 @@ knowledge vault stays a directory of Markdown files on your own machine that
 you can read, back up, and move with ordinary tools, whether or not Engram is
 running.
 
-## Screenshot
+## Live demo
 
-<img width="1169" height="458" alt="image" src="https://github.com/user-attachments/assets/10990074-5519-4b38-abc2-67ecbc4a8137" />
+**▶ [Try the web UI in your browser](https://t11z.github.io/engram/demo/)** — a
+static demo with built-in sample data, no install or server required. Everything
+runs locally in your browser and resets on reload.
 
 ## Quick start
 

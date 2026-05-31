@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "docs-site/**"
+      - "apps/web-ui/**"
+      - "packages/contract/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -27,6 +29,26 @@ jobs:
           python-version: "3.12"
       - run: pip install -r docs-site/requirements.txt
       - run: mkdocs build -f docs-site/mkdocs.yml --strict
+
+      # Build the web UI in demo mode (in-memory mock data, no backend) and
+      # publish it under /demo on the same Pages site.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web-ui build
+        env:
+          VITE_ENGRAM_DEMO: "1"
+          ENGRAM_BASE_PATH: /engram/demo
+      - name: Stage demo into the Pages site
+        run: |
+          mkdir -p docs-site/site/demo
+          cp -r apps/web-ui/build/. docs-site/site/demo/
+          # SPA fallback so deep links under /demo resolve to the app shell.
+          cp apps/web-ui/build/index.html docs-site/site/demo/404.html
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: docs-site/site

@@ -1,8 +1,13 @@
 import { get, writable } from "svelte/store";
 
+import { DEMO, DEMO_TOKEN } from "./demo";
+
 const KEY = "engram_token";
 
 function load(): string | null {
+  // In the static demo there is no server to authenticate against; seed a
+  // sentinel token so the app renders past the connect screen.
+  if (DEMO) return DEMO_TOKEN;
   if (typeof localStorage === "undefined") return null;
   return localStorage.getItem(KEY);
 }

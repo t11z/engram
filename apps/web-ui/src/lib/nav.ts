@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { base } from "$app/paths";
 
 export type View = "list" | "search" | "trash";
 
@@ -29,5 +30,5 @@ export function navTo(patch: Record<string, string | null>): void {
     else params.set(key, value);
   }
   const query = params.toString();
-  void goto(query ? `/?${query}` : "/", { keepFocus: true, noScroll: true });
+  void goto(query ? `${base}/?${query}` : `${base}/`, { keepFocus: true, noScroll: true });
 }

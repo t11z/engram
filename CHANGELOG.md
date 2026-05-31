@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A static, interactive demo of the web UI published on GitHub Pages at
+  <https://t11z.github.io/engram/demo/>. Built with `VITE_ENGRAM_DEMO=1`, the UI
+  runs against an in-memory mock store seeded with curated sample notes instead
+  of a live `/api/v1` server, so newcomers can browse, search, and try
+  delete/restore entirely in the browser (state resets on reload). The demo is
+  built and deployed alongside the docs site by `pages.yml`. The README links to
+  it in place of the former static screenshot.
+
 ## [0.3.0] - 2026-05-31
 
 ### Added
