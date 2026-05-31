@@ -20,7 +20,7 @@
     "@eslint/js": "^10.0.1",
     "@types/chrome": "^0.1.42",
     "@types/turndown": "^5.0.6",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "jsdom": "^29.1.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.60.0",
