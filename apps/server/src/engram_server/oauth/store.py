@@ -1,6 +1,6 @@
 """Persistent SQLite storage for the embedded OAuth server.
 
-Lives at ``<vault>/.bartleby/oauth.db`` — separate from the rebuildable FTS index,
+Lives at ``<vault>/.engram/oauth.db`` — separate from the rebuildable FTS index,
 because clients and tokens are not reconstructable and must survive restarts so
 claude.ai stays connected. All access goes through this class; it serializes
 writes with a lock and is safe to call from Starlette's threadpool.

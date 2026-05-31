@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
-from bartleby_core.ids import is_valid_ulid, new_ulid, ulid_timestamp
-from bartleby_core.slug import build_filename, short_suffix, slugify
+from engram_core.ids import is_valid_ulid, new_ulid, ulid_timestamp
+from engram_core.slug import build_filename, short_suffix, slugify
 
 
 def test_new_ulid_is_valid_and_26_chars() -> None:

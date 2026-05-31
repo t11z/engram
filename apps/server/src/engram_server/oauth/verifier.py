@@ -1,8 +1,8 @@
 """Bearer-token verifier for the OAuth-protected ``/mcp`` endpoint.
 
 Accepts two kinds of credential so existing clients keep working alongside
-claude.ai: (a) the legacy static ``BARTLEBY_AUTH_TOKEN`` (full scopes, no expiry),
-or (b) an OAuth access token minted by :class:`BartlebyOAuthProvider`.
+claude.ai: (a) the legacy static ``ENGRAM_AUTH_TOKEN`` (full scopes, no expiry),
+or (b) an OAuth access token minted by :class:`EngramOAuthProvider`.
 """
 
 from __future__ import annotations
@@ -12,15 +12,15 @@ import secrets
 from mcp.server.auth.provider import AccessToken
 
 from . import SCOPES
-from .provider import BartlebyOAuthProvider
+from .provider import EngramOAuthProvider
 
 STATIC_CLIENT_ID = "static-bearer-token"
 
 
-class BartlebyTokenVerifier:
+class EngramTokenVerifier:
     """Concrete verifier satisfying the SDK's ``TokenVerifier`` protocol."""
 
-    def __init__(self, provider: BartlebyOAuthProvider, static_token: str) -> None:
+    def __init__(self, provider: EngramOAuthProvider, static_token: str) -> None:
         self._provider = provider
         self._static_token = static_token
 

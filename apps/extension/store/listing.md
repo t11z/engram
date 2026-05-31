@@ -6,7 +6,7 @@ sync with the manifest (`apps/extension/wxt.config.ts`) and `CHANGELOG.md`.
 ## Name
 
 ```
-Bartleby
+Engram
 ```
 
 ## Summary / short description
@@ -15,7 +15,7 @@ Bartleby
 
 ```
 Clip the page you're reading to clean Markdown and save it to your own
-self-hosted Bartleby server. No accounts, no tracking.
+self-hosted Engram server. No accounts, no tracking.
 ```
 
 ## Category
@@ -26,50 +26,50 @@ self-hosted Bartleby server. No accounts, no tracking.
 ## Single-purpose description (Chrome requires this)
 
 ```
-Bartleby has one purpose: when you click its toolbar icon, it extracts the
+Engram has one purpose: when you click its toolbar icon, it extracts the
 readable article from the current tab, converts it to Markdown, and saves it as
-a note to the Bartleby server you configure. It does nothing else.
+a note to the Engram server you configure. It does nothing else.
 ```
 
 ## Full description
 
 ```
-Bartleby is a web clipper for your own notes — not a cloud service.
+Engram is a web clipper for your own notes — not a cloud service.
 
-Point it at a Bartleby server you host yourself, then clip any article with one
-click. Bartleby extracts the readable content, converts it to clean Markdown
+Point it at a Engram server you host yourself, then clip any article with one
+click. Engram extracts the readable content, converts it to clean Markdown
 (headings, lists, links, code intact), and saves it as a note with the source
 URL, so your reading turns into a searchable Markdown vault you own.
 
 What makes it different:
 
-• Self-hosted. There is no Bartleby cloud and no default server. You enter your
+• Self-hosted. There is no Engram cloud and no default server. You enter your
   own server URL and token on the options page; nothing works until you do.
 • Private by design. No analytics, no telemetry, no phone-home. The only network
   request goes to your server. The extension's authors operate no servers and
   receive no data.
-• Minimal permissions. Bartleby reads a page only when you click it (activeTab),
+• Minimal permissions. Engram reads a page only when you click it (activeTab),
   and asks for access to just your server's address — never to all the sites you
   visit by default.
 • Clean Markdown. Powered by Readability and Turndown, the same extraction stack
   trusted for reader views, all bundled locally — no remote code.
 
-You need a running Bartleby server (https://github.com/t11z/bartleby) to use
+You need a running Engram server (https://github.com/t11z/engram) to use
 this extension.
 ```
 
 ## URLs
 
-- **Homepage / support**: <https://github.com/t11z/bartleby>
-- **Privacy policy**: <https://t11z.github.io/bartleby/privacy/>
-- **Documentation**: <https://t11z.github.io/bartleby/>
+- **Homepage / support**: <https://github.com/t11z/engram>
+- **Privacy policy**: <https://t11z.github.io/engram/privacy/>
+- **Documentation**: <https://t11z.github.io/engram/>
 
 ## Notes for reviewers
 
 ```
 This extension requires a self-hosted backend. To test end-to-end you must run a
-Bartleby server and enter its URL + bearer token on the options page. Setup:
-https://t11z.github.io/bartleby/quick-start/
+Engram server and enter its URL + bearer token on the options page. Setup:
+https://t11z.github.io/engram/quick-start/
 
 Without a configured server the extension intentionally does nothing. The broad
 optional host permission exists only so the user can grant access to their own

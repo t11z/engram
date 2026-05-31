@@ -11,6 +11,6 @@ export default {
   kit: {
     // SPA: single index.html fallback, served by the FastAPI static mount at /.
     adapter: adapter({ fallback: "index.html" }),
-    alias: { "@bartleby/contract": contract },
+    alias: { "@engram/contract": contract },
   },
 };

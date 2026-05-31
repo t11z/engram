@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Renamed the project from Bartleby to Engram.** This is a breaking change with
+  no backward-compatibility shims: configuration env vars are now `ENGRAM_*`
+  (previously `BARTLEBY_*`), the CLI command is `engram` (previously `bartleby`),
+  the Python packages/modules are `engram-core`/`engram-server` (modules
+  `engram_core`/`engram_server`), and the vault's index/OAuth directory moved from
+  `<vault>/.bartleby/` to `<vault>/.engram/`. Existing deployments must update
+  their `.env`, rename the systemd unit to `engram.service`, and rename the
+  `.bartleby/` directory in each vault to `.engram/`. The Docker image is now
+  `ghcr.io/t11z/engram`.
+
 ### Security
 - Force the transitive `tmp` npm dependency (pulled in via `wxt` → `web-ext-run`)
   to `^0.2.7` through a `pnpm.overrides` entry, picking up the upstream
@@ -25,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Browser-extension store-submission kit under `apps/extension/store/` (listing
   copy, per-permission justifications, and a submission checklist) plus a public
   privacy policy at `docs-site/docs/privacy.md`
-  (<https://t11z.github.io/bartleby/privacy/>), both required by the Chrome Web
+  (<https://t11z.github.io/engram/privacy/>), both required by the Chrome Web
   Store and Firefox AMO. Release publishing is now automated by an opt-in
   `publish-extension` job in `release.yml` that runs `wxt submit` for both
   stores, gated on the `PUBLISH_EXTENSION` repository variable.
@@ -40,21 +51,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   see [ADR-0005](./docs/adr/0005-server-side-url-fetch.md).
 - Optional embedded OAuth 2.1 authorization server so the MCP endpoint can be
   added to claude.ai (Web) as a Custom Connector. Opt in by setting
-  `BARTLEBY_PUBLIC_URL` (the public HTTPS origin / token issuer) and
-  `BARTLEBY_OAUTH_PASSWORD` (gates the login/consent page). Supports Dynamic
+  `ENGRAM_PUBLIC_URL` (the public HTTPS origin / token issuer) and
+  `ENGRAM_OAUTH_PASSWORD` (gates the login/consent page). Supports Dynamic
   Client Registration, the authorization-code + PKCE flow, refresh-token
   rotation, and revocation, with clients and tokens persisted in
-  `<vault>/.bartleby/oauth.db`. The static `BARTLEBY_AUTH_TOKEN` keeps working —
+  `<vault>/.engram/oauth.db`. The static `ENGRAM_AUTH_TOKEN` keeps working —
   `/mcp` accepts either an OAuth token or the static token — and when
-  `BARTLEBY_PUBLIC_URL` is unset the server behaves exactly as before.
-- Extension icons (16/32/48/128) using the Bartleby quill brand mark, shown in
+  `ENGRAM_PUBLIC_URL` is unset the server behaves exactly as before.
+- Extension icons (16/32/48/128) using the Engram quill brand mark, shown in
   the browser toolbar and the Chrome Web Store / Firefox AMO listings.
-- Extension: a right-click "Open Bartleby server" entry on the toolbar icon's
+- Extension: a right-click "Open Engram server" entry on the toolbar icon's
   context menu that opens the configured server's web UI in a new tab (or the
   options page when no server is configured yet).
 
 ### Changed
-- Web UI and documentation-site favicons now use the Bartleby quill brand mark
+- Web UI and documentation-site favicons now use the Engram quill brand mark
   (replacing the placeholder `B` mark).
 
 ### Security
@@ -69,15 +80,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project bootstrap: implementation plan, governance docs (README, security
   policy, contributing guide), ADRs, CI/CD workflows, deployment scaffolding,
   MkDocs documentation site, and the issue-first workflow automation.
-- `packages/core` (`bartleby_core`): the vault core library — Pydantic models,
+- `packages/core` (`engram_core`): the vault core library — Pydantic models,
   Markdown + YAML frontmatter storage (`VaultStore`), a rebuildable SQLite FTS5
   search index, soft-delete/restore/retention-purge, idempotent create, startup
-  reconciliation, full reindex, and the `python -m bartleby_core.reindex` entry
+  reconciliation, full reindex, and the `python -m engram_core.reindex` entry
   point.
-- `apps/server` (`bartleby_server`): the FastAPI server — REST `/api/v1` (notes,
+- `apps/server` (`engram_server`): the FastAPI server — REST `/api/v1` (notes,
   search, trash), the MCP endpoint `/mcp` with five tools, `/healthz`, shared
-  bearer-token auth, and a conditional static UI mount; the `bartleby` and
-  `bartleby-export-openapi` commands.
+  bearer-token auth, and a conditional static UI mount; the `engram` and
+  `engram-export-openapi` commands.
 - `packages/contract`: the committed OpenAPI schema and generated TypeScript
   types, plus the pnpm workspace; CI now enforces contract drift.
 - `apps/extension`: a Manifest V3 browser extension for Chrome and Firefox, built
@@ -92,5 +103,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   note's Markdown (sanitized with DOMPurify), delete with confirm, full-text
   search, and view/restore trashed notes. Single route with query-string state.
 
-[Unreleased]: https://github.com/t11z/bartleby/compare/v0.1.0...main
-[0.1.0]: https://github.com/t11z/bartleby/releases/tag/v0.1.0
+[Unreleased]: https://github.com/t11z/engram/compare/v0.1.0...main
+[0.1.0]: https://github.com/t11z/engram/releases/tag/v0.1.0

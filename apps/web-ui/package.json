@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "description": "Bartleby web UI: a static SvelteKit SPA for browsing the vault.",
+  "description": "Engram web UI: a static SvelteKit SPA for browsing the vault.",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",

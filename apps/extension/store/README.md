@@ -1,6 +1,6 @@
 # Store submission
 
-Everything needed to publish the Bartleby extension to the **Chrome Web Store**
+Everything needed to publish the Engram extension to the **Chrome Web Store**
 and **Firefox Add-ons (AMO)**. The build artifacts themselves are produced by
 `release.yml` on every `v*.*.*` tag (attached to the GitHub Release) and can be
 published automatically via the gated `publish-extension` job — see
@@ -12,7 +12,7 @@ published automatically via the gated `publish-extension` job — see
   category, single-purpose statement) for both stores.
 - [`permissions.md`](./permissions.md) — per-permission justifications to paste
   into the review forms.
-- Privacy policy — published at <https://t11z.github.io/bartleby/privacy/>
+- Privacy policy — published at <https://t11z.github.io/engram/privacy/>
   (source: [`docs-site/docs/privacy.md`](../../../docs-site/docs/privacy.md)).
   Both stores require a public privacy-policy URL.
 
@@ -67,7 +67,7 @@ Actions) before enabling it:
 | `CHROME_CLIENT_ID` | Chrome | Google Cloud OAuth client (Chrome Web Store API). |
 | `CHROME_CLIENT_SECRET` | Chrome | Same OAuth client. |
 | `CHROME_REFRESH_TOKEN` | Chrome | Generated once via the OAuth flow. |
-| `FIREFOX_EXTENSION_ID` | Firefox | `bartleby@t11z.github.io` (the gecko id). |
+| `FIREFOX_EXTENSION_ID` | Firefox | `engram@t11z.github.io` (the gecko id). |
 | `FIREFOX_JWT_ISSUER` | Firefox | AMO API credentials (`user:...`). |
 | `FIREFOX_JWT_SECRET` | Firefox | AMO API secret. |
 

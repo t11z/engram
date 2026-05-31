@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from bartleby_core.config import Settings
-from bartleby_core.errors import NoteNotFound, NoteNotInTrash
-from bartleby_core.models import Note, NoteCreate
-from bartleby_core.service import NoteService
+from engram_core.config import Settings
+from engram_core.errors import NoteNotFound, NoteNotInTrash
+from engram_core.models import Note, NoteCreate
+from engram_core.service import NoteService
 
 NOW = datetime(2026, 5, 1, 12, 0, tzinfo=UTC)
 

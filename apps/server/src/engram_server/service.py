@@ -5,7 +5,7 @@ lifespan; read through ``get_service``.
 
 from __future__ import annotations
 
-from bartleby_core import LinkService, NoteService
+from engram_core import LinkService, NoteService
 
 _service: NoteService | None = None
 

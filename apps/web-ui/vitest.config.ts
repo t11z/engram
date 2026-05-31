@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [svelte()],
   resolve: {
     alias: {
-      "@bartleby/contract": contract,
+      "@engram/contract": contract,
       "$app/navigation": appNavigation,
     },
   },

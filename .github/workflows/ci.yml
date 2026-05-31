@@ -80,7 +80,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Regenerate OpenAPI schema and TypeScript types
         run: |
-          uv run bartleby-export-openapi packages/contract/openapi.json
+          uv run engram-export-openapi packages/contract/openapi.json
           pnpm exec openapi-typescript packages/contract/openapi.json -o packages/contract/types.ts
       - name: Fail on contract drift
         run: git diff --exit-code packages/contract

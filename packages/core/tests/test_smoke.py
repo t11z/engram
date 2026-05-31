@@ -1,5 +1,5 @@
-import bartleby_core
+import engram_core
 
 
 def test_version_exposed() -> None:
-    assert bartleby_core.__version__ == "0.1.0"
+    assert engram_core.__version__ == "0.1.0"

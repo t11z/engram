@@ -8,7 +8,7 @@ body:
     attributes:
       label: Which page or section?
       description: A URL on the docs site, or a file path in the repo.
-      placeholder: e.g. https://t11z.github.io/bartleby/configuration/ or docs/IMPLEMENTATION_PLAN.md
+      placeholder: e.g. https://t11z.github.io/engram/configuration/ or docs/IMPLEMENTATION_PLAN.md
     validations:
       required: true
   - type: textarea

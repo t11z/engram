@@ -1,7 +1,7 @@
 # MCP tool reference
 
-Bartleby exposes five MCP tools at `/mcp` (Streamable HTTP). All operate on the
-same vault as the REST API. Authenticate with your `BARTLEBY_AUTH_TOKEN` via your
+Engram exposes five MCP tools at `/mcp` (Streamable HTTP). All operate on the
+same vault as the REST API. Authenticate with your `ENGRAM_AUTH_TOKEN` via your
 client's standard MCP auth mechanism (sent as `Authorization: Bearer`). To connect
 from claude.ai (Web), which requires OAuth instead of a static token, enable the
 embedded OAuth server — see

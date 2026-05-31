@@ -1,6 +1,6 @@
-# Bartleby — Implementation Plan
+# Engram — Implementation Plan
 
-This is the source of truth for Bartleby's architecture and delivery roadmap.
+This is the source of truth for Engram's architecture and delivery roadmap.
 It records decisions so individual sessions and contributors do not re-litigate
 them. Working conventions (how to branch, test, commit) live in `CLAUDE.md`, not
 here. Individual decisions with trade-offs are captured as ADRs under
@@ -13,7 +13,7 @@ begins Phase 1 (core + storage).
 
 ## 1. Architecture summary
 
-Bartleby is an LLM-agnostic, self-hosted personal knowledge vault. A single
+Engram is an LLM-agnostic, self-hosted personal knowledge vault. A single
 backend process exposes three surfaces:
 
 - `/mcp` — spec-compliant Model Context Protocol endpoint for LLM clients.
@@ -29,7 +29,7 @@ Decisions of record (not up for revision in v1):
 - **Storage.** Markdown files on disk with YAML frontmatter; the filesystem is
   the source of truth. A rebuildable SQLite FTS5 index accelerates search.
 - **Auth.** A single bearer token (env var) shared by REST and MCP. An optional
-  embedded OAuth 2.1 authorization server (opt-in via `BARTLEBY_PUBLIC_URL`) lets
+  embedded OAuth 2.1 authorization server (opt-in via `ENGRAM_PUBLIC_URL`) lets
   claude.ai connect as a Custom Connector; `/mcp` then accepts either an OAuth
   token or the static bearer token. See [ADR-0004](./adr/0004-oauth-embedded-authorization-server.md).
 - **Privacy.** The server makes no outbound calls. No telemetry, no update checks.
@@ -49,7 +49,7 @@ flowchart LR
     E[Browser extension]
     W[Web UI]
   end
-  subgraph server [Bartleby server - one process]
+  subgraph server [Engram server - one process]
     MCP[/mcp/]
     REST[/api/v1/*/]
     STATIC[/ static UI/]
@@ -73,7 +73,7 @@ flowchart LR
 ## 2. Repository layout
 
 ```
-bartleby/
+engram/
 ├── packages/
 │   ├── core/            # Pydantic models + service layer (save/search/read/list/delete). No web framework imports.
 │   └── contract/        # OpenAPI schema + generated TypeScript types, committed for clients to consume.
@@ -183,14 +183,14 @@ the same service layer as REST.
 **Resolved: filesystem is the source of truth + a rebuildable SQLite FTS5 index.**
 
 - **Why files are canonical.** Markdown on disk keeps the vault portable,
-  inspectable, diffable, and durable independent of Bartleby. A user can read
+  inspectable, diffable, and durable independent of Engram. A user can read
   their notes with any text editor and back them up with any tool.
 - **Why an index at all.** Walking and parsing the whole vault on every query is
   fine at tens of notes and painful at thousands. FTS5 gives ranked, prefix-aware
   full-text search. It ships inside the Python stdlib `sqlite3` (`ENABLE_FTS5` is
   on in CPython's bundled SQLite), so it adds **zero runtime dependencies** and no
   external service — appropriate for a single-user VPS.
-- **Index is disposable.** The DB (default `<vault>/.bartleby/index.db`, gitignored
+- **Index is disposable.** The DB (default `<vault>/.engram/index.db`, gitignored
   and excluded from the vault listing) is a cache. Deleting it and reindexing
   reproduces it exactly from the files.
 
@@ -203,7 +203,7 @@ the same service layer as REST.
    the index and re-index anything stale or missing, and drop index rows whose
    file is gone. This heals edits made to the vault while the server was down
    (e.g. a `git pull` or manual edit).
-3. **Manual reindex.** A `bartleby reindex` CLI path (and an internal service
+3. **Manual reindex.** A `engram reindex` CLI path (and an internal service
    call) rebuilds from scratch for recovery.
 
 The storage layer lives in `packages/core` behind a `VaultStore` interface so the
@@ -212,7 +212,7 @@ see.
 
 ### Git-backing of the vault — **out of scope for v1** (resolved)
 
-Bartleby will not manage git inside the vault in v1. A user who wants version
+Engram will not manage git inside the vault in v1. A user who wants version
 history can `git init` their vault directory themselves; the startup
 reconciliation above already absorbs out-of-band changes. First-class git
 integration (auto-commit, history browsing) is a candidate for a later version
@@ -251,23 +251,23 @@ and would get its own ADR. Keeping it out keeps v1 focused on the core loop.
 - **Compose (`infra/docker-compose.yml`).** One service, the vault mounted as a
   named/host volume, env from `.env`, a healthcheck on `/healthz`. A commented
   Caddy block shows TLS termination; `infra/Caddyfile.example` and
-  `infra/bartleby.service` cover reverse-proxy and bare-metal systemd options.
+  `infra/engram.service` cover reverse-proxy and bare-metal systemd options.
 - **Env var contract** (documented in `infra/.env.example`):
 
   | Var | Default | Meaning |
   |-----|---------|---------|
-  | `BARTLEBY_VAULT_PATH` | `/data/vault` | Vault root on disk. |
-  | `BARTLEBY_AUTH_TOKEN` | *(required)* | Bearer token for REST + MCP. |
-  | `BARTLEBY_HOST` | `0.0.0.0` | Bind host. |
-  | `BARTLEBY_PORT` | `8080` | Bind port. |
-  | `BARTLEBY_TRASH_RETENTION_DAYS` | `30` | Days before trashed notes are purged. |
-  | `BARTLEBY_INDEX_PATH` | `<vault>/.bartleby/index.db` | SQLite FTS5 index location. |
-  | `BARTLEBY_CORS_ORIGINS` | *(empty)* | Comma-separated origins for the extension/web-ui. |
-  | `BARTLEBY_PUBLIC_URL` | *(empty)* | Public HTTPS origin; setting it enables the embedded OAuth server (issuer + resource id). |
-  | `BARTLEBY_OAUTH_PASSWORD` | *(empty)* | Login-gate password for the OAuth consent page; required when `BARTLEBY_PUBLIC_URL` is set. |
-  | `BARTLEBY_LOG_LEVEL` | `info` | Log verbosity. |
+  | `ENGRAM_VAULT_PATH` | `/data/vault` | Vault root on disk. |
+  | `ENGRAM_AUTH_TOKEN` | *(required)* | Bearer token for REST + MCP. |
+  | `ENGRAM_HOST` | `0.0.0.0` | Bind host. |
+  | `ENGRAM_PORT` | `8080` | Bind port. |
+  | `ENGRAM_TRASH_RETENTION_DAYS` | `30` | Days before trashed notes are purged. |
+  | `ENGRAM_INDEX_PATH` | `<vault>/.engram/index.db` | SQLite FTS5 index location. |
+  | `ENGRAM_CORS_ORIGINS` | *(empty)* | Comma-separated origins for the extension/web-ui. |
+  | `ENGRAM_PUBLIC_URL` | *(empty)* | Public HTTPS origin; setting it enables the embedded OAuth server (issuer + resource id). |
+  | `ENGRAM_OAUTH_PASSWORD` | *(empty)* | Login-gate password for the OAuth consent page; required when `ENGRAM_PUBLIC_URL` is set. |
+  | `ENGRAM_LOG_LEVEL` | `info` | Log verbosity. |
 
-- **First-run experience.** With no `BARTLEBY_AUTH_TOKEN`, the server refuses to
+- **First-run experience.** With no `ENGRAM_AUTH_TOKEN`, the server refuses to
   start and prints a one-line generation hint. On first start it creates the vault
   directory, `.trash/`, and the index if missing. `docker compose up` then opening
   `/` should show an empty vault and a working `/healthz`.

@@ -2,10 +2,10 @@
 
 Lets claude.ai (and any spec-compliant MCP client) connect to ``/mcp`` via the
 OAuth authorization-code + PKCE flow with Dynamic Client Registration, while the
-legacy static ``BARTLEBY_AUTH_TOKEN`` keeps working. Built entirely on the OAuth
+legacy static ``ENGRAM_AUTH_TOKEN`` keeps working. Built entirely on the OAuth
 primitives shipped in the ``mcp`` SDK plus stdlib ``sqlite3`` — no new dependency.
 
-Only active when ``BARTLEBY_PUBLIC_URL`` is configured; otherwise the server
+Only active when ``ENGRAM_PUBLIC_URL`` is configured; otherwise the server
 behaves exactly as before.
 """
 
@@ -17,8 +17,8 @@ REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30  # 30 days
 AUTHORIZATION_CODE_TTL_SECONDS = 5 * 60  # 5 minutes
 PENDING_AUTHORIZATION_TTL_SECONDS = 10 * 60  # 10 minutes
 
-# Single scope granted to every Bartleby token. The MCP client need not request it.
-SCOPES = ["bartleby"]
+# Single scope granted to every Engram token. The MCP client need not request it.
+SCOPES = ["engram"]
 
 __all__ = [
     "ACCESS_TOKEN_TTL_SECONDS",

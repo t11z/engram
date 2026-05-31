@@ -1,8 +1,8 @@
 """Password-gated consent page for the OAuth authorization flow.
 
 ``GET /oauth/login`` renders a minimal form carrying the opaque ``ticket`` that
-``BartlebyOAuthProvider.authorize`` parked. ``POST /oauth/login`` checks the
-submitted password (constant-time) against ``BARTLEBY_OAUTH_PASSWORD`` and, on
+``EngramOAuthProvider.authorize`` parked. ``POST /oauth/login`` checks the
+submitted password (constant-time) against ``ENGRAM_OAUTH_PASSWORD`` and, on
 success, asks the provider to mint an authorization code and redirects back to the
 client. This is what stops anyone who can reach the public URL from minting a token.
 """
@@ -16,14 +16,14 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import Route
 
-from .provider import LOGIN_PATH, BartlebyOAuthProvider
+from .provider import LOGIN_PATH, EngramOAuthProvider
 
 _PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bartleby — authorize connection</title>
+<title>Engram — authorize connection</title>
 <style>
   body {{ font-family: system-ui, sans-serif; background: #f5f5f4; margin: 0;
          display: flex; min-height: 100vh; align-items: center; justify-content: center; }}
@@ -42,7 +42,7 @@ _PAGE = """<!doctype html>
 <body>
   <div class="card">
     <h1>Authorize connection</h1>
-    <p>A client wants to connect to your Bartleby vault. Enter the access password to allow it.</p>
+    <p>A client wants to connect to your Engram vault. Enter the access password to allow it.</p>
     <form method="post" action="{action}">
       <input type="hidden" name="ticket" value="{ticket}">
       <label for="password">Access password</label>
@@ -66,7 +66,7 @@ def _render(ticket: str, *, error: str | None = None) -> str:
     )
 
 
-def create_login_routes(provider: BartlebyOAuthProvider, password: str) -> list[Route]:
+def create_login_routes(provider: EngramOAuthProvider, password: str) -> list[Route]:
     async def get_login(request: Request) -> Response:
         ticket = request.query_params.get("ticket")
         if not ticket:

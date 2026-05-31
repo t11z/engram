@@ -1,5 +1,5 @@
 """Server-only configuration. Core reads its own storage settings; the server
-owns auth, bind address, and CORS. Both share the ``BARTLEBY_`` env prefix.
+owns auth, bind address, and CORS. Both share the ``ENGRAM_`` env prefix.
 """
 
 from __future__ import annotations
@@ -8,14 +8,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ServerSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="BARTLEBY_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="ENGRAM_", extra="ignore")
 
     auth_token: str = ""
     host: str = "0.0.0.0"
     port: int = 8080
     cors_origins: str = ""
 
-    # Public HTTPS origin (no path), e.g. https://bartleby.example.com. Setting it
+    # Public HTTPS origin (no path), e.g. https://engram.example.com. Setting it
     # turns on the embedded OAuth authorization server so claude.ai can connect as
     # a Custom Connector; it also becomes the OAuth issuer / resource identifier.
     public_url: str = ""

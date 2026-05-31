@@ -1,7 +1,7 @@
 # API reference
 
 This summarizes the REST API. The machine-readable contract is the committed
-[OpenAPI schema](https://github.com/t11z/bartleby/blob/main/packages/contract/openapi.json)
+[OpenAPI schema](https://github.com/t11z/engram/blob/main/packages/contract/openapi.json)
 (`packages/contract/openapi.json`), from which the TypeScript client types are
 generated; CI fails on drift between the server and that schema.
 

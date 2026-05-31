@@ -1,4 +1,4 @@
-"""Bartleby vault core: models, storage, search index, and service layer.
+"""Engram vault core: models, storage, search index, and service layer.
 
 The filesystem (Markdown + YAML frontmatter) is the source of truth; a rebuildable
 SQLite FTS5 index accelerates search. ``NoteService`` is the only surface that
@@ -7,8 +7,8 @@ higher layers (REST, MCP) should depend on. This package imports no web framewor
 
 from .config import Settings
 from .errors import (
-    BartlebyError,
     BlockedHost,
+    EngramError,
     IndexUnavailable,
     InvalidNote,
     LinkExtractionFailed,
@@ -29,8 +29,8 @@ from .service import LinkService, NoteService, ReconcileReport, ReindexReport
 __version__ = "0.1.0"
 
 __all__ = [
-    "BartlebyError",
     "BlockedHost",
+    "EngramError",
     "ExtractedArticle",
     "IndexUnavailable",
     "InvalidNote",

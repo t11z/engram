@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from bartleby_core.models import NoteSummary, SearchResult
+from engram_core.models import NoteSummary, SearchResult
 
 
 class NoteListResponse(BaseModel):

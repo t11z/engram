@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Bartleby v1 is deliberately small. Some things are out of scope by design
+        Engram v1 is deliberately small. Some things are out of scope by design
         (in-UI editor, wikilinks/backlinks/graph, embeddings/semantic search,
         multi-tenancy, accounts, plugins, bulk ops, mobile app, hosted demo).
         Please check the implementation plan before filing.

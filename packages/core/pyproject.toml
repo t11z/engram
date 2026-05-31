@@ -1,7 +1,7 @@
 [project]
-name = "bartleby-core"
+name = "engram-core"
 version = "0.1.0"
-description = "Bartleby vault core: models, storage, search index, and service layer."
+description = "Engram vault core: models, storage, search index, and service layer."
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.11,<3",
@@ -19,4 +19,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/bartleby_core"]
+packages = ["src/engram_core"]

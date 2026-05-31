@@ -5,7 +5,7 @@
 
 ## Context and problem statement
 
-Bartleby exposes three surfaces over the same vault: an MCP endpoint for LLM
+Engram exposes three surfaces over the same vault: an MCP endpoint for LLM
 clients, a REST API for the extension and web UI, and the static web UI bundle.
 We must decide whether these run as one process or as separate services. The
 target deployment is a single user on their own VPS, so operational simplicity

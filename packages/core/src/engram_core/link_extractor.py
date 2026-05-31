@@ -1,5 +1,5 @@
 """Fetch a public URL, validate the response, and extract its article body as
-Markdown. No vault writes here — :class:`bartleby_core.service.LinkService`
+Markdown. No vault writes here — :class:`engram_core.service.LinkService`
 composes this with :class:`NoteService.create` to produce a stored note.
 
 This module is the only place in the codebase that makes outbound HTTP calls.
@@ -33,7 +33,7 @@ from .errors import (
     UnsupportedContentType,
 )
 
-_DEFAULT_USER_AGENT = "Bartleby/0.1 (+link-importer)"
+_DEFAULT_USER_AGENT = "Engram/0.1 (+link-importer)"
 _DEFAULT_ALLOWED_TYPES: frozenset[str] = frozenset({"text/html", "application/xhtml+xml"})
 
 

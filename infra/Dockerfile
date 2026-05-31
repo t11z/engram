@@ -1,4 +1,4 @@
-# Bartleby — single image containing the server + the prebuilt web UI.
+# Engram — single image containing the server + the prebuilt web UI.
 # Multi-stage: (1) build the SvelteKit UI to static assets, (2) assemble the
 # Python server and copy the UI bundle in. The final image serves MCP, REST,
 # and the UI on one port.
@@ -24,35 +24,35 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.17 /uv /usr/local/bin/uv
 ENV PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    BARTLEBY_VAULT_PATH=/data/vault \
-    BARTLEBY_UI_DIR=/app/apps/web-ui/build \
-    BARTLEBY_HOST=0.0.0.0 \
-    BARTLEBY_PORT=8080
+    ENGRAM_VAULT_PATH=/data/vault \
+    ENGRAM_UI_DIR=/app/apps/web-ui/build \
+    ENGRAM_HOST=0.0.0.0 \
+    ENGRAM_PORT=8080
 
 WORKDIR /app
 
-# Install the server package (and its workspace dep bartleby-core) for production.
+# Install the server package (and its workspace dep engram-core) for production.
 # The members are wired through the root dev group, so a plain `uv sync --no-dev`
 # would install nothing — target the package explicitly.
 COPY pyproject.toml uv.lock ./
 COPY packages/core packages/core
 COPY apps/server apps/server
-RUN uv sync --frozen --no-dev --package bartleby-server
+RUN uv sync --frozen --no-dev --package engram-server
 
 # Bring in the prebuilt UI so the server can serve it at "/".
 COPY --from=ui /app/apps/web-ui/build apps/web-ui/build
 
-RUN useradd --system --uid 10001 bartleby \
+RUN useradd --system --uid 10001 engram \
     && mkdir -p /data/vault \
-    && chown -R bartleby:bartleby /app /data
-USER bartleby
+    && chown -R engram:engram /app /data
+USER engram
 
 EXPOSE 8080
 VOLUME ["/data"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
-  CMD python -c "import urllib.request,os,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('BARTLEBY_PORT','8080')+'/healthz').status==200 else 1)"
+  CMD python -c "import urllib.request,os,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('ENGRAM_PORT','8080')+'/healthz').status==200 else 1)"
 
 # --no-sync: run the env assembled at build time without re-syncing (which would
 # otherwise revert to the root project and drop the server package).
-CMD ["uv", "run", "--no-sync", "bartleby"]
+CMD ["uv", "run", "--no-sync", "engram"]

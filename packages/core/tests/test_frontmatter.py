@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from bartleby_core.errors import InvalidNote
-from bartleby_core.frontmatter import (
+from engram_core.errors import InvalidNote
+from engram_core.frontmatter import (
     dump_note,
     parse_note,
     read_note_file,
     write_note_file,
 )
-from bartleby_core.models import Note, to_rfc3339
+from engram_core.models import Note, to_rfc3339
 
 
 def test_parse_full_note(sample_vault_path: Path) -> None:

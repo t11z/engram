@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from bartleby_core.config import Settings
-from bartleby_core.reindex import main as reindex_main
-from bartleby_core.service import NoteService
+from engram_core.config import Settings
+from engram_core.reindex import main as reindex_main
+from engram_core.service import NoteService
 
 LIVE_COUNT = 5
 TRASH_COUNT = 1

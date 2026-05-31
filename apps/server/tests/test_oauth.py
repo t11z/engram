@@ -12,8 +12,8 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from bartleby_server.app import create_app
-from bartleby_server.config import ServerSettings
+from engram_server.app import create_app
+from engram_server.config import ServerSettings
 
 ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_VAULT = ROOT / "packages" / "core" / "tests" / "fixtures" / "sample-vault"
@@ -27,13 +27,13 @@ REDIRECT_URI = "https://client.example.com/callback"
 def oauth_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     vault = tmp_path / "vault"
     shutil.copytree(SAMPLE_VAULT, vault)
-    monkeypatch.setenv("BARTLEBY_VAULT_PATH", str(vault))
-    monkeypatch.setenv("BARTLEBY_INDEX_PATH", str(tmp_path / "index.db"))
-    monkeypatch.setenv("BARTLEBY_AUTH_TOKEN", TOKEN)
-    monkeypatch.setenv("BARTLEBY_PUBLIC_URL", PUBLIC_URL)
-    monkeypatch.setenv("BARTLEBY_OAUTH_PASSWORD", PASSWORD)
-    monkeypatch.delenv("BARTLEBY_UI_DIR", raising=False)
-    monkeypatch.delenv("BARTLEBY_CORS_ORIGINS", raising=False)
+    monkeypatch.setenv("ENGRAM_VAULT_PATH", str(vault))
+    monkeypatch.setenv("ENGRAM_INDEX_PATH", str(tmp_path / "index.db"))
+    monkeypatch.setenv("ENGRAM_AUTH_TOKEN", TOKEN)
+    monkeypatch.setenv("ENGRAM_PUBLIC_URL", PUBLIC_URL)
+    monkeypatch.setenv("ENGRAM_OAUTH_PASSWORD", PASSWORD)
+    monkeypatch.delenv("ENGRAM_UI_DIR", raising=False)
+    monkeypatch.delenv("ENGRAM_CORS_ORIGINS", raising=False)
     return vault
 
 
@@ -223,7 +223,7 @@ def test_token_rejects_wrong_pkce_verifier(client: TestClient) -> None:
 def test_token_rejects_expired_code(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from bartleby_server.oauth import provider as provider_module
+    from engram_server.oauth import provider as provider_module
 
     monkeypatch.setattr(provider_module, "AUTHORIZATION_CODE_TTL_SECONDS", -10)
     reg = _register(client)
@@ -339,9 +339,9 @@ def test_rest_still_rejects_missing_token(client: TestClient) -> None:
 def test_store_persists_across_reopen(tmp_path: Path) -> None:
     from mcp.shared.auth import OAuthClientInformationFull
 
-    from bartleby_server.oauth.store import OAuthStore
+    from engram_server.oauth.store import OAuthStore
 
-    db_path = tmp_path / ".bartleby" / "oauth.db"
+    db_path = tmp_path / ".engram" / "oauth.db"
     store = OAuthStore(db_path)
     store.open()
     client_info = OAuthClientInformationFull(

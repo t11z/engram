@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from bartleby_server import mcp_server
-from bartleby_server.app import create_app
-from bartleby_server.config import ServerSettings
+from engram_server import mcp_server
+from engram_server.app import create_app
+from engram_server.config import ServerSettings
 
 ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_VAULT = ROOT / "packages" / "core" / "tests" / "fixtures" / "sample-vault"
@@ -84,11 +84,11 @@ def test_bare_mcp_path_reaches_transport(tmp_path: Path, monkeypatch: pytest.Mon
     ui_dir = tmp_path / "ui"
     ui_dir.mkdir()
     (ui_dir / "index.html").write_text("<!doctype html>ok")
-    monkeypatch.setenv("BARTLEBY_VAULT_PATH", str(vault))
-    monkeypatch.setenv("BARTLEBY_INDEX_PATH", str(tmp_path / "index.db"))
-    monkeypatch.setenv("BARTLEBY_AUTH_TOKEN", TOKEN)
-    monkeypatch.setenv("BARTLEBY_UI_DIR", str(ui_dir))
-    monkeypatch.delenv("BARTLEBY_CORS_ORIGINS", raising=False)
+    monkeypatch.setenv("ENGRAM_VAULT_PATH", str(vault))
+    monkeypatch.setenv("ENGRAM_INDEX_PATH", str(tmp_path / "index.db"))
+    monkeypatch.setenv("ENGRAM_AUTH_TOKEN", TOKEN)
+    monkeypatch.setenv("ENGRAM_UI_DIR", str(ui_dir))
+    monkeypatch.delenv("ENGRAM_CORS_ORIGINS", raising=False)
 
     headers = {
         "Authorization": f"Bearer {TOKEN}",

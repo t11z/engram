@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from bartleby_core.errors import NoteNotFound, NoteNotInTrash
-from bartleby_core.models import Note
-from bartleby_core.store import VaultStore
+from engram_core.errors import NoteNotFound, NoteNotInTrash
+from engram_core.models import Note
+from engram_core.store import VaultStore
 
 
 def _note(note_id: str, title: str, created: str = "2026-05-01T10:00:00Z") -> Note:

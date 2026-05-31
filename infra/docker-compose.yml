@@ -1,19 +1,19 @@
-# Bartleby — minimal single-user deployment.
+# Engram — minimal single-user deployment.
 #
-#   1. cp .env.example .env   (then set BARTLEBY_AUTH_TOKEN)
+#   1. cp .env.example .env   (then set ENGRAM_AUTH_TOKEN)
 #   2. docker compose up -d
 #
 # By default this binds to localhost only. Put it behind HTTPS before exposing
 # it to the internet — see Caddyfile.example.
 
 services:
-  bartleby:
-    image: ghcr.io/t11z/bartleby:latest
+  engram:
+    image: ghcr.io/t11z/engram:latest
     # To build from source instead of pulling the image:
     # build:
     #   context: ..
     #   dockerfile: infra/Dockerfile
-    container_name: bartleby
+    container_name: engram
     restart: unless-stopped
     env_file: .env
     ports:
@@ -31,7 +31,7 @@ services:
   # caddy:
   #   image: caddy:2
   #   restart: unless-stopped
-  #   depends_on: [bartleby]
+  #   depends_on: [engram]
   #   ports:
   #     - "80:80"
   #     - "443:443"

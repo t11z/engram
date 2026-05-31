@@ -1,6 +1,6 @@
 # Security Policy
 
-Bartleby is a single-maintainer hobby project. Security reports are taken
+Engram is a single-maintainer hobby project. Security reports are taken
 seriously, but please set expectations accordingly: responses are **best-effort,
 typically within two weeks**. There is no SLA and no bug-bounty program.
 
@@ -32,19 +32,19 @@ disclosure.
 
 **Out of scope:**
 
-- The contents of your own vault. Bartleby stores the Markdown you give it; it
+- The contents of your own vault. Engram stores the Markdown you give it; it
   does not sanitize or vet that content.
 - Third-party MCP clients (Claude, other assistants) and their behavior.
 - Misconfiguration of your own deployment — for example, exposing the server
-  without HTTPS, or using a weak `BARTLEBY_AUTH_TOKEN`. See the
-  [installation guide](https://t11z.github.io/bartleby/installation/) for the
+  without HTTPS, or using a weak `ENGRAM_AUTH_TOKEN`. See the
+  [installation guide](https://t11z.github.io/engram/installation/) for the
   recommended setup.
 - Third-party dependencies — please report those upstream (Dependabot tracks
   them here).
 
 ## Security posture
 
-By design, Bartleby reduces its own attack surface:
+By design, Engram reduces its own attack surface:
 
 - **No outbound calls.** The server never phones home — no telemetry, no update
   checks, no analytics.

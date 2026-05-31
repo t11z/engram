@@ -4,8 +4,8 @@ The MCP endpoint, REST routes, and static mount are added here. ``create_app``
 deliberately does not require an auth token (so the schema can be exported and the
 app built in tests); the CLI enforces the token at serve time.
 
-When ``BARTLEBY_PUBLIC_URL`` is set, the embedded OAuth authorization server is
-wired in (see ``bartleby_server.oauth``): OAuth metadata/endpoints are mounted at
+When ``ENGRAM_PUBLIC_URL`` is set, the embedded OAuth authorization server is
+wired in (see ``engram_server.oauth``): OAuth metadata/endpoints are mounted at
 the app root and ``/mcp`` is protected by the SDK middleware chain, which accepts
 both OAuth tokens and the legacy static bearer token.
 """
@@ -33,8 +33,8 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from bartleby_core import NoteService
-from bartleby_core import Settings as CoreSettings
+from engram_core import NoteService
+from engram_core import Settings as CoreSettings
 
 from . import __version__
 from .auth import BearerAuthMiddleware
@@ -43,16 +43,16 @@ from .errors import install_exception_handlers
 from .mcp_server import build_mcp
 from .oauth import SCOPES
 from .oauth.login import create_login_routes
-from .oauth.provider import BartlebyOAuthProvider
+from .oauth.provider import EngramOAuthProvider
 from .oauth.store import OAuthStore
-from .oauth.verifier import BartlebyTokenVerifier
+from .oauth.verifier import EngramTokenVerifier
 from .rest import router as rest_router
 from .schemas import HealthResponse
 from .service import set_service
 
 
 def _ui_dir() -> Path:
-    override = os.environ.get("BARTLEBY_UI_DIR")
+    override = os.environ.get("ENGRAM_UI_DIR")
     if override:
         return Path(override)
     return Path(__file__).resolve().parents[4] / "apps" / "web-ui" / "build"
@@ -90,8 +90,8 @@ class NormalizeMcpPath:
 def _install_oauth(
     app: FastAPI,
     settings: ServerSettings,
-    provider: BartlebyOAuthProvider,
-    verifier: BartlebyTokenVerifier,
+    provider: EngramOAuthProvider,
+    verifier: EngramTokenVerifier,
     mcp: FastMCP,
 ) -> None:
     """Mount OAuth metadata/endpoints at the app root and protect ``/mcp``.
@@ -140,13 +140,13 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
     mcp = build_mcp()
 
     oauth_store: OAuthStore | None = None
-    oauth_provider: BartlebyOAuthProvider | None = None
-    oauth_verifier: BartlebyTokenVerifier | None = None
+    oauth_provider: EngramOAuthProvider | None = None
+    oauth_verifier: EngramTokenVerifier | None = None
     if settings.oauth_enabled:
-        db_path = CoreSettings().vault_path / ".bartleby" / "oauth.db"
+        db_path = CoreSettings().vault_path / ".engram" / "oauth.db"
         oauth_store = OAuthStore(db_path)
-        oauth_provider = BartlebyOAuthProvider(oauth_store, settings.public_url)
-        oauth_verifier = BartlebyTokenVerifier(oauth_provider, settings.auth_token)
+        oauth_provider = EngramOAuthProvider(oauth_store, settings.public_url)
+        oauth_verifier = EngramTokenVerifier(oauth_provider, settings.auth_token)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -164,7 +164,7 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
             if oauth_store is not None:
                 oauth_store.close()
 
-    app = FastAPI(title="Bartleby", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="Engram", version=__version__, lifespan=lifespan)
     install_exception_handlers(app)
 
     # With OAuth on, /mcp is guarded by the SDK chain, so this middleware narrows to

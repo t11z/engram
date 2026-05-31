@@ -1,6 +1,6 @@
-# Contributing to Bartleby
+# Contributing to Engram
 
-Thanks for your interest. Bartleby is a small, single-maintainer project, so the
+Thanks for your interest. Engram is a small, single-maintainer project, so the
 process is lightweight — but a few conventions keep it maintainable.
 
 > New to the codebase? Read [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md)

@@ -2,9 +2,9 @@
 
 _Last updated: 2026-05-31_
 
-Bartleby is self-hosted note-taking software. This policy covers the **Bartleby
+Engram is self-hosted note-taking software. This policy covers the **Engram
 browser extension** for Chrome and Firefox, which clips the page you are viewing
-to Markdown and saves it to a Bartleby server **that you run and configure**.
+to Markdown and saves it to a Engram server **that you run and configure**.
 
 ## The short version
 
@@ -24,7 +24,7 @@ on the current tab). When you do, it processes, for that one page:
 - the page title; and
 - the page URL (stored as the note's `source_url`).
 
-This data is sent in a single `POST` request to your configured Bartleby server
+This data is sent in a single `POST` request to your configured Engram server
 and is **not** retained anywhere else by the extension.
 
 ## What the extension stores
@@ -32,7 +32,7 @@ and is **not** retained anywhere else by the extension.
 On its options page you provide two values, which are saved in the browser's
 local extension storage (`chrome.storage.local`) on your device:
 
-- the **server URL** of your Bartleby instance; and
+- the **server URL** of your Engram instance; and
 - a **bearer token** used to authenticate to that server.
 
 These never leave your device except as the `Authorization` header sent to your
@@ -45,7 +45,7 @@ own server. They are not transmitted to any third party.
 | `activeTab` | Read the current tab's content **only** when you click the extension. |
 | `scripting` | Inject the one-off extractor script into that tab to read the article on user action. |
 | `storage` | Persist your server URL and bearer token on your device. |
-| `contextMenus` | Add a "Open Bartleby server" entry to the toolbar icon's right-click menu. |
+| `contextMenus` | Add a "Open Engram server" entry to the toolbar icon's right-click menu. |
 | Optional host access to your server's origin | Allow the `POST` to your configured server. Requested at runtime for **only** the origin you enter — never for all sites by default. |
 
 ## Data sharing
@@ -58,9 +58,9 @@ disclose any data. The data you clip is sent solely to the server you control.
 The extension itself retains nothing beyond the server URL and token in local
 storage, which you can clear at any time by removing the values on the options
 page or uninstalling the extension. Notes you save live on **your** server;
-retention and deletion there are governed by your own Bartleby configuration.
+retention and deletion there are governed by your own Engram configuration.
 
 ## Contact
 
 Questions or concerns: open an issue at
-<https://github.com/t11z/bartleby/issues>.
+<https://github.com/t11z/engram/issues>.

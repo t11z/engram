@@ -1,0 +1,26 @@
+# Example systemd unit for running Engram as a container on bare metal.
+# Adjust the image tag and paths, then:
+#   sudo cp engram.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now engram
+#
+# Expects an env file at /etc/engram/engram.env (see .env.example) and a
+# vault directory at /var/lib/engram.
+
+[Unit]
+Description=Engram — self-hosted knowledge vault
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStartPre=-/usr/bin/docker rm -f engram
+ExecStart=/usr/bin/docker run --rm --name engram \
+  --env-file /etc/engram/engram.env \
+  -p 127.0.0.1:8080:8080 \
+  -v /var/lib/engram:/data \
+  ghcr.io/t11z/engram:latest
+ExecStop=/usr/bin/docker stop engram
+
+[Install]
+WantedBy=multi-user.target

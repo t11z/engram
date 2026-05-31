@@ -8,8 +8,8 @@ import { buildNotePayload } from "@/lib/payload";
 import { serverLinkUrl } from "@/lib/url";
 
 const EXTRACTOR_FILE = "content-scripts/extractor.js";
-const EXTRACT_MESSAGE = "bartleby:extract";
-const OPEN_SERVER_MENU_ID = "bartleby:open-server";
+const EXTRACT_MESSAGE = "engram:extract";
+const OPEN_SERVER_MENU_ID = "engram:open-server";
 
 async function clip(tab: chrome.tabs.Tab): Promise<void> {
   try {
@@ -57,7 +57,7 @@ export default defineBackground(() => {
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
       id: OPEN_SERVER_MENU_ID,
-      title: "Open Bartleby server",
+      title: "Open Engram server",
       contexts: ["action"],
     });
   });

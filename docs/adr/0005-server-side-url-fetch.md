@@ -10,7 +10,7 @@ vault. It runs Readability + Turndown in the user's tab, then POSTs Markdown to
 `POST /api/v1/notes`. There is no iOS app and no equivalent share-sheet path on
 mobile.
 
-We want an iPhone user to share any URL from Safari into Bartleby with a single
+We want an iPhone user to share any URL from Safari into Engram with a single
 tap. Building a native iOS app for this is disproportionate — it needs Xcode, a
 developer account, and ongoing maintenance for one HTTP POST. An Apple Shortcut
 costs none of that, but a Shortcut cannot run Readability: at best it forwards
@@ -22,7 +22,7 @@ Markdown. Either:
 - every client owns extraction (today's pattern, repeated per platform), or
 - the server owns extraction and clients become URL-forwarders.
 
-`CLAUDE.md` documents Bartleby's "no outbound calls" stance: no telemetry, no
+`CLAUDE.md` documents Engram's "no outbound calls" stance: no telemetry, no
 update pings, the browser extension talks only to the user's own server. A new
 server endpoint that fetches the URL the user just supplied technically breaks
 that — it makes an outbound HTTP call. The question is whether that is the same
@@ -80,7 +80,7 @@ fails the one-tap goal that motivated the work.
 
 - The README's privacy stance must be updated: "no outbound calls except the
   ones you initiate by sharing a URL." Telemetry is still none.
-- All future clients (iOS Shortcut, future Android app, CLI `bartleby clip
+- All future clients (iOS Shortcut, future Android app, CLI `engram clip
   <url>`, third-party integrations) get this feature for free without code
   changes here.
 - The server now depends on `httpx`, `trafilatura`, `markdownify`, and
