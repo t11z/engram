@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 
 const contract = fileURLToPath(new URL("../../packages/contract/types.ts", import.meta.url));
 const appNavigation = fileURLToPath(new URL("./test/stubs/app-navigation.ts", import.meta.url));
+const appPaths = fileURLToPath(new URL("./test/stubs/app-paths.ts", import.meta.url));
 
 export default defineConfig({
   plugins: [svelte()],
@@ -12,6 +13,7 @@ export default defineConfig({
     alias: {
       "@engram/contract": contract,
       "$app/navigation": appNavigation,
+      "$app/paths": appPaths,
     },
   },
   test: {

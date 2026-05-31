@@ -1,27 +1,17 @@
 import type { components } from "@engram/contract";
 
+import * as demo from "./api.demo";
+import { ApiError } from "./api-error";
 import { currentToken, disconnect } from "./auth";
+import { DEMO } from "./demo";
+
+export { ApiError };
 
 export type Note = components["schemas"]["Note"];
 export type NoteSummary = components["schemas"]["NoteSummary"];
 export type NoteListResponse = components["schemas"]["NoteListResponse"];
 export type SearchResult = components["schemas"]["SearchResult"];
 export type SearchResponse = components["schemas"]["SearchResponse"];
-
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-
-  get isAuth(): boolean {
-    return this.status === 401 || this.status === 403;
-  }
-}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const tok = currentToken();
@@ -57,25 +47,31 @@ function query(params: Record<string, string | null | undefined>): string {
 }
 
 export function listNotes(args: { cursor?: string; tag?: string | null } = {}): Promise<NoteListResponse> {
+  if (DEMO) return demo.listNotes(args);
   return request(`/notes${query({ cursor: args.cursor, tag: args.tag })}`);
 }
 
 export function getNote(id: string): Promise<Note> {
+  if (DEMO) return demo.getNote(id);
   return request(`/notes/${encodeURIComponent(id)}`);
 }
 
 export function deleteNote(id: string): Promise<void> {
+  if (DEMO) return demo.deleteNote(id);
   return request(`/notes/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export function search(args: { q: string; tag?: string | null }): Promise<SearchResponse> {
+  if (DEMO) return demo.search(args);
   return request(`/search${query({ q: args.q, tag: args.tag })}`);
 }
 
 export function listTrash(args: { cursor?: string } = {}): Promise<NoteListResponse> {
+  if (DEMO) return demo.listTrash(args);
   return request(`/trash${query({ cursor: args.cursor })}`);
 }
 
 export function restore(id: string): Promise<Note> {
+  if (DEMO) return demo.restore(id);
   return request(`/notes/${encodeURIComponent(id)}/restore`, { method: "POST" });
 }
