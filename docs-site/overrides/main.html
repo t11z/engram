@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{#-
+  Inject site-verification meta tags into the document head. Values are read
+  from mkdocs.yml `extra` (which itself pulls from environment variables), so
+  nothing sensitive is hardcoded in the repo. Tags are only emitted when the
+  corresponding value is set.
+-#}
+{% block extrahead %}
+  {{ super() }}
+  {% if config.extra.google_site_verification %}
+  <meta name="google-site-verification" content="{{ config.extra.google_site_verification }}" />
+  {% endif %}
+{% endblock %}
