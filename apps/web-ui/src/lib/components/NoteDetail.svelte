@@ -59,7 +59,7 @@
     <!-- Meta row -->
     <div class="mb-5 flex flex-wrap items-center gap-2 border-b border-ink-600 pb-4">
       {#if note.tags && note.tags.length}
-        {#each note.tags as tag}
+        {#each note.tags as tag (tag)}
           <span class="rounded border border-ink-600 bg-ink-800 px-2 py-0.5 font-mono text-xs text-chalk-500">#{tag}</span>
         {/each}
       {/if}
