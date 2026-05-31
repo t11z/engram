@@ -1,0 +1,258 @@
+/* Engram Design System — MkDocs Material override
+   Dark warm-ink base (#0B0907) · amber accent (#D9983F) · Quicksand headings */
+
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ── Color tokens ── */
+[data-md-color-scheme="slate"] {
+  /* Backgrounds */
+  --md-default-bg-color:           #0B0907;
+  --md-default-bg-color--light:    #181410;
+  --md-default-bg-color--lighter:  #1F1A14;
+  --md-default-bg-color--lightest: #271F18;
+
+  /* Foreground */
+  --md-default-fg-color:           #D8CFC0;
+  --md-default-fg-color--light:    #ABA08C;
+  --md-default-fg-color--lighter:  #756B5C;
+  --md-default-fg-color--lightest: #463B2D;
+
+  /* Primary — amber */
+  --md-primary-fg-color:           #D9983F;
+  --md-primary-fg-color--light:    #F2B65C;
+  --md-primary-fg-color--dark:     #C2832E;
+  --md-primary-bg-color:           #0B0907;
+  --md-primary-bg-color--light:    #181410;
+
+  /* Accent */
+  --md-accent-fg-color:            #D9983F;
+  --md-accent-fg-color--transparent: rgba(217,152,63,0.12);
+  --md-accent-bg-color:            #4A3214;
+  --md-accent-bg-color--light:     rgba(217,152,63,0.10);
+
+  /* Code blocks */
+  --md-code-bg-color:              #070604;
+  --md-code-fg-color:              #D8CFC0;
+  --md-code-hl-color:              rgba(217,152,63,0.15);
+
+  /* Links */
+  --md-typeset-a-color:            #D9983F;
+
+  /* Admonitions */
+  --md-admonition-bg-color:        #181410;
+
+  /* Footer */
+  --md-footer-bg-color:            #070604;
+  --md-footer-bg-color--dark:      #070604;
+  --md-footer-fg-color:            #756B5C;
+  --md-footer-fg-color--light:     #ABA08C;
+  --md-footer-fg-color--lighter:   #463B2D;
+}
+
+/* ── Header ── */
+.md-header {
+  background-color: #0B0907 !important;
+  border-bottom: 1px solid #322A20;
+  box-shadow: none !important;
+}
+
+.md-header__title {
+  font-family: 'Quicksand', 'IBM Plex Sans', sans-serif !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #F4EEE3 !important;
+}
+
+/* ── Navigation ── */
+.md-nav__title {
+  font-family: 'Quicksand', sans-serif !important;
+  font-weight: 600;
+  color: #ABA08C !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem !important;
+}
+
+.md-nav__link {
+  color: #ABA08C !important;
+  font-size: 0.83rem;
+  transition: color 0.15s;
+}
+
+.md-nav__link:hover,
+.md-nav__link:focus {
+  color: #F2B65C !important;
+}
+
+.md-nav__item--active > .md-nav__link,
+.md-nav__link--active {
+  color: #D9983F !important;
+  font-weight: 500;
+}
+
+/* ── Sidebar ── */
+.md-sidebar {
+  background-color: #0B0907;
+}
+
+.md-sidebar__inner {
+  border-right: 1px solid #1F1A14;
+}
+
+/* ── Content area ── */
+.md-content {
+  background-color: #110E0B;
+}
+
+.md-main__inner {
+  background-color: #110E0B;
+}
+
+/* ── Typography ── */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-family: 'Quicksand', 'IBM Plex Sans', sans-serif !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #F4EEE3;
+}
+
+.md-typeset h1 { font-size: 2rem; line-height: 1.08; }
+.md-typeset h2 { font-size: 1.45rem; border-bottom: 1px solid #322A20; padding-bottom: 0.4em; }
+.md-typeset h3 { font-size: 1.15rem; }
+
+.md-typeset {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  color: #D8CFC0;
+  line-height: 1.75;
+}
+
+.md-typeset a {
+  color: #D9983F !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.md-typeset a:hover {
+  color: #F2B65C !important;
+}
+
+/* ── Code ── */
+.md-typeset code {
+  background: #070604 !important;
+  border: 1px solid #322A20;
+  border-radius: 4px;
+  color: #F2B65C !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 0.85em;
+  padding: 0.1em 0.38em;
+}
+
+.md-typeset pre > code {
+  color: #D8CFC0 !important;
+  border: none;
+  padding: 0;
+  background: none !important;
+}
+
+.highlight, .md-typeset pre {
+  background: #070604 !important;
+  border: 1px solid #322A20 !important;
+  border-radius: 8px !important;
+}
+
+/* Code copy button */
+.md-clipboard {
+  color: #756B5C !important;
+}
+.md-clipboard:hover {
+  color: #D9983F !important;
+}
+
+/* ── Admonitions ── */
+.md-typeset .admonition,
+.md-typeset details {
+  background: #181410 !important;
+  border-left-color: #D9983F !important;
+  border-radius: 0 6px 6px 0;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  background: rgba(217,152,63,0.08) !important;
+  color: #D9983F !important;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Tables ── */
+.md-typeset table:not([class]) {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.md-typeset table:not([class]) th {
+  background: #181410 !important;
+  color: #F4EEE3 !important;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #322A20 !important;
+}
+
+.md-typeset table:not([class]) td {
+  border-bottom: 1px solid #1F1A14 !important;
+  color: #D8CFC0;
+}
+
+.md-typeset table:not([class]) tr:hover td {
+  background: #181410;
+}
+
+/* ── Search ── */
+.md-search__input {
+  background: #181410 !important;
+  border: 1px solid #322A20 !important;
+  color: #D8CFC0 !important;
+  border-radius: 6px;
+}
+
+.md-search__input::placeholder {
+  color: #756B5C !important;
+}
+
+.md-search__input:focus {
+  border-color: #D9983F !important;
+  box-shadow: 0 0 0 3px rgba(217,152,63,0.15) !important;
+}
+
+/* ── Footer ── */
+.md-footer {
+  background: #070604 !important;
+  border-top: 1px solid #1F1A14;
+}
+
+.md-footer-meta {
+  background: #070604 !important;
+}
+
+/* ── Back to top ── */
+.md-top {
+  background: #181410 !important;
+  color: #D9983F !important;
+  border: 1px solid #322A20;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0B0907; }
+::-webkit-scrollbar-thumb { background: #322A20; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #463B2D; }

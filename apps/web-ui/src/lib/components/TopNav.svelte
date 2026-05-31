@@ -7,18 +7,52 @@
   const nav = $derived(parse(page.url));
 </script>
 
-<header class="border-b">
-  <nav class="mx-auto flex max-w-6xl items-center gap-4 p-4">
-    <span class="font-serif text-lg">Engram</span>
-    <button class:font-semibold={nav.view === "list"} onclick={() => navTo({ view: null, note: null, q: null, tag: null })}>
-      Notes
+<header class="border-b border-ink-600 bg-ink-900">
+  <nav class="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3">
+    <!-- Logo lockup -->
+    <a
+      href="/"
+      class="mr-4 flex items-center gap-2.5"
+      onclick={(e) => { e.preventDefault(); navTo({ view: null, note: null, q: null, tag: null }); }}
+    >
+      <img src="/engram-logomark.svg" alt="" class="h-7 w-7" />
+      <img src="/engram-wordmark-trans.png" alt="engram" class="h-4 w-auto opacity-90" />
+    </a>
+
+    <!-- Nav items -->
+    <button
+      class="rounded px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors duration-150"
+      class:text-amber-400={nav.view === "list" || nav.view === null}
+      class:text-chalk-500={nav.view !== "list" && nav.view !== null}
+      class:hover:text-chalk-300={nav.view !== "list" && nav.view !== null}
+      onclick={() => navTo({ view: null, note: null, q: null, tag: null })}
+    >
+      Vault
     </button>
-    <button class:font-semibold={nav.view === "search"} onclick={() => navTo({ view: "search", note: null })}>
+    <button
+      class="rounded px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors duration-150"
+      class:text-amber-400={nav.view === "search"}
+      class:text-chalk-500={nav.view !== "search"}
+      class:hover:text-chalk-300={nav.view !== "search"}
+      onclick={() => navTo({ view: "search", note: null })}
+    >
       Search
     </button>
-    <button class:font-semibold={nav.view === "trash"} onclick={() => navTo({ view: "trash", note: null })}>
+    <button
+      class="rounded px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors duration-150"
+      class:text-amber-400={nav.view === "trash"}
+      class:text-chalk-500={nav.view !== "trash"}
+      class:hover:text-chalk-300={nav.view !== "trash"}
+      onclick={() => navTo({ view: "trash", note: null })}
+    >
       Trash
     </button>
-    <button class="ml-auto text-sm text-gray-600" onclick={() => disconnect()}>Disconnect</button>
+
+    <button
+      class="ml-auto font-mono text-xs uppercase tracking-widest text-chalk-700 transition-colors duration-150 hover:text-oxide"
+      onclick={() => disconnect()}
+    >
+      Disconnect
+    </button>
   </nav>
 </header>

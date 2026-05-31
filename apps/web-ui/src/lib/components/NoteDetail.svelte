@@ -41,31 +41,46 @@
 </script>
 
 {#if error}
-  <p class="text-red-600">{error}</p>
+  <p class="font-sans text-sm text-oxide">{error}</p>
 {:else if note}
-  <article class="space-y-3">
-    <div class="flex items-start justify-between gap-4">
-      <h1 class="text-xl font-semibold">{note.title}</h1>
+  <article class="rounded-stamp border border-ink-600 bg-ink-850 p-6">
+    <!-- Header row -->
+    <div class="mb-4 flex items-start justify-between gap-4">
+      <h1 class="font-display text-xl font-semibold leading-tight tracking-tight text-chalk-100">{note.title}</h1>
       <button
         type="button"
-        class="shrink-0 rounded border border-red-600 px-2 py-1 text-sm text-red-600"
+        class="shrink-0 rounded border border-oxide/40 px-2.5 py-1 font-sans text-xs text-oxide transition-colors duration-150 hover:bg-oxide/10"
         onclick={() => (confirming = true)}
       >
         Delete
       </button>
     </div>
-    {#if note.tags && note.tags.length}
-      <div class="text-sm text-gray-500">{note.tags.join(", ")}</div>
-    {/if}
-    {#if note.source_url}
-      <a href={note.source_url} target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 underline">
-        Source
-      </a>
-    {/if}
+
+    <!-- Meta row -->
+    <div class="mb-5 flex flex-wrap items-center gap-2 border-b border-ink-600 pb-4">
+      {#if note.tags && note.tags.length}
+        {#each note.tags as tag}
+          <span class="rounded border border-ink-600 bg-ink-800 px-2 py-0.5 font-mono text-xs text-chalk-500">#{tag}</span>
+        {/each}
+      {/if}
+      {#if note.source_url}
+        <a
+          href={note.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-auto font-mono text-xs text-slate transition-colors duration-150 hover:text-amber-300"
+        >
+          Source ↗
+        </a>
+      {/if}
+    </div>
+
     <MarkdownView body={note.body} />
   </article>
 {:else}
-  <p class="text-gray-500">Loading…</p>
+  <div class="flex h-48 items-center justify-center rounded-stamp border border-ink-600 bg-ink-800/40">
+    <p class="font-mono text-xs uppercase tracking-widest text-chalk-700">Loading…</p>
+  </div>
 {/if}
 
 {#if confirming}

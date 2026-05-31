@@ -9,10 +9,12 @@
 </script>
 
 {#if $token}
-  <TopNav />
-  <main class="mx-auto max-w-6xl p-4">
-    {@render children()}
-  </main>
+  <div class="flex min-h-screen flex-col bg-ink-850">
+    <TopNav />
+    <main class="mx-auto w-full max-w-6xl flex-1 p-4">
+      {@render children()}
+    </main>
+  </div>
 {:else}
   <ConnectScreen />
 {/if}

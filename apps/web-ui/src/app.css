@@ -1,1 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Quicksand';
+  src: url('/fonts/Quicksand-VariableFont_wght.ttf') format('truetype-variations'),
+       url('/fonts/Quicksand-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Ink — warm near-black substrate */
+  --color-ink-1000: #070604;
+  --color-ink-900: #0B0907;
+  --color-ink-850: #110E0B;
+  --color-ink-800: #181410;
+  --color-ink-750: #1F1A14;
+  --color-ink-700: #271F18;
+  --color-ink-600: #322A20;
+  --color-ink-500: #463B2D;
+
+  /* Amber — ember accent (the trace, burned-in) */
+  --color-amber-200: #F7D49A;
+  --color-amber-300: #F2B65C;
+  --color-amber-400: #D9983F;
+  --color-amber-500: #C2832E;
+  --color-amber-700: #8A5A1E;
+  --color-amber-900: #4A3214;
+
+  /* Chalk — warm off-whites (foreground) */
+  --color-chalk-100: #F4EEE3;
+  --color-chalk-300: #D8CFC0;
+  --color-chalk-500: #ABA08C;
+  --color-chalk-700: #756B5C;
+
+  /* Semantic */
+  --color-sage: #8AA06B;
+  --color-oxide: #C5563C;
+  --color-slate: #7C93A6;
+
+  /* Fonts */
+  --font-display: 'Quicksand', 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Radii */
+  --radius-stamp: 14px;
+}
+
+/* Base */
+html, body {
+  background-color: #0B0907;
+  color: #D8CFC0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0B0907; }
+::-webkit-scrollbar-thumb { background: #322A20; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #463B2D; }
+
+/* Prose — markdown rendering */
+.prose { color: #D8CFC0; line-height: 1.7; }
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #F4EEE3;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.prose h1 { font-size: 1.75rem; }
+.prose h2 { font-size: 1.375rem; }
+.prose h3 { font-size: 1.125rem; }
+.prose p { margin-bottom: 1em; }
+.prose a { color: #D9983F; text-decoration: underline; text-underline-offset: 3px; }
+.prose a:hover { color: #F2B65C; }
+.prose code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875em;
+  background: #070604;
+  border: 1px solid #322A20;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  color: #F2B65C;
+}
+.prose pre {
+  background: #070604;
+  border: 1px solid #322A20;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #D8CFC0;
+  font-size: 0.875rem;
+}
+.prose blockquote {
+  border-left: 2px solid #D9983F;
+  padding-left: 1rem;
+  color: #ABA08C;
+  font-style: italic;
+  margin: 1em 0;
+}
+.prose ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1em; }
+.prose ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+.prose li { margin-bottom: 0.25em; }
+.prose hr { border-color: #322A20; margin: 2em 0; }
+.prose strong { color: #F4EEE3; font-weight: 600; }

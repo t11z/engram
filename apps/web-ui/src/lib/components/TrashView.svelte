@@ -44,26 +44,35 @@
   });
 </script>
 
-<div class="rounded border">
+<div class="overflow-hidden rounded-stamp border border-ink-600 bg-ink-800">
   {#each items as item (item.id)}
-    <div class="flex items-center gap-2 border-b p-3">
-      <div class="flex-1">
-        <div class="font-medium">{item.title}</div>
-        <div class="text-xs text-gray-400">{item.updated_at}</div>
+    <div class="flex items-center gap-3 border-b border-ink-600 px-4 py-3 last:border-b-0">
+      <div class="flex-1 min-w-0">
+        <div class="truncate font-sans text-sm font-medium text-chalk-300">{item.title}</div>
+        <div class="font-mono text-xs text-chalk-700">{item.updated_at}</div>
       </div>
-      <button type="button" class="rounded border px-2 py-1 text-sm" onclick={() => doRestore(item.id)}>
+      <button
+        type="button"
+        class="shrink-0 rounded border border-ink-600 px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-chalk-500 transition-colors duration-150 hover:border-sage hover:text-sage"
+        onclick={() => doRestore(item.id)}
+      >
         Restore
       </button>
     </div>
   {/each}
   {#if items.length === 0 && !loading}
-    <p class="p-3 text-sm text-gray-500">Trash is empty.</p>
+    <p class="px-4 py-6 font-mono text-xs uppercase tracking-widest text-chalk-700">Trash is empty.</p>
   {/if}
   {#if error}
-    <p class="p-3 text-sm text-red-600">{error}</p>
+    <p class="px-4 py-3 font-sans text-sm text-oxide">{error}</p>
   {/if}
   {#if cursor}
-    <button type="button" class="w-full p-2 text-sm" onclick={() => load(false)} disabled={loading}>
+    <button
+      type="button"
+      class="w-full border-t border-ink-600 px-4 py-2.5 font-mono text-xs uppercase tracking-widest text-chalk-500 transition-colors duration-150 hover:bg-ink-750 hover:text-chalk-300 disabled:opacity-40"
+      onclick={() => load(false)}
+      disabled={loading}
+    >
       {loading ? "Loading…" : "Load more"}
     </button>
   {/if}
