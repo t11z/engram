@@ -70,7 +70,8 @@ pnpm -r test
 ## Commit messages — Conventional Commits
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).
-The release notes and CHANGELOG depend on it.
+GitHub Releases are the source of truth for release notes, and they are
+auto-generated from merged PR titles, so a clear title matters.
 
 ```
 <type>(<optional scope>): <summary>
@@ -91,10 +92,9 @@ docs: clarify bearer token setup in quick start
 2. Make the change with tests; run the checks above.
 3. **Update the contract** if you changed the REST API: regenerate the OpenAPI
    schema and TS types in `packages/contract` and commit them (CI fails on drift).
-4. **Update `CHANGELOG.md`** under `[Unreleased]` for any user-visible change.
-5. **Tick the roadmap.** If your PR completes a `- [ ]` item in
+4. **Tick the roadmap.** If your PR completes a `- [ ]` item in
    `docs/IMPLEMENTATION_PLAN.md`, flip it to `- [x]` in the same PR.
-6. Open the PR using the template; link the issue with `Closes #<issue>`.
+5. Open the PR using the template; link the issue with `Closes #<issue>`.
 
 ## Be civil
 

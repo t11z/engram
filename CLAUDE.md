@@ -50,7 +50,9 @@ whose project files are absent.
 
 ## When to update what
 
-- **CHANGELOG.md** — every user-visible change, under `[Unreleased]`.
+- **Release notes** — there is no hand-maintained changelog. GitHub Releases are
+  the source of truth; their notes are auto-generated from merged PRs when a
+  `v*.*.*` tag is pushed, so write a clear Conventional-Commit PR title.
 - **Contracts** (`packages/contract`) — whenever the REST API changes:
   regenerate the OpenAPI schema + TS types and **commit them**. CI fails on drift.
 - **API version** (`/api/v1`) — only for breaking REST changes; additive changes

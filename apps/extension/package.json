@@ -2,7 +2,7 @@
   "name": "extension",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "Engram browser extension (MV3): clip the active tab to Markdown.",
   "scripts": {
     "postinstall": "wxt prepare",

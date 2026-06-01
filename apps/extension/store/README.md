@@ -32,14 +32,17 @@ this file if you want them version-controlled.
 
 ## Manual submission checklist
 
-1. Bump `version` in `apps/extension/package.json` and add a `CHANGELOG.md`
-   entry. (WXT derives the manifest version from `package.json`.)
-2. Build store-ready zips from a clean tree:
+1. Decide the release version and push the `v*.*.*` tag (release notes are
+   auto-generated from the merged PRs). The published manifest version is derived
+   from the tag by `release.yml` — no manual `package.json` bump is required.
+2. Build store-ready zips from a clean tree, stamping the version to match the tag:
    ```bash
+   export ENGRAM_EXTENSION_VERSION=1.2.3  # the tag without the leading "v"
    pnpm --filter extension zip            # Chrome zip
    pnpm --filter extension zip -b firefox # Firefox zip + sources zip
    ```
-   Zips land in `apps/extension/dist/`.
+   Zips land in `apps/extension/dist/`. (CI sets this automatically from the tag;
+   for a manual build, set it yourself so the manifest version is correct.)
 3. **Chrome**: upload the `*-chrome.zip`, fill in the listing from
    `listing.md`, paste permission justifications from `permissions.md`, set the
    privacy-policy URL, complete the data-use disclosures (none collected by the

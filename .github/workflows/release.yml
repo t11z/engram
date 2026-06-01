@@ -4,10 +4,9 @@ on:
   push:
     tags:
       - "v*.*.*"
-  # Manual re-run that regenerates the release notes for an existing tag from
-  # the current CHANGELOG. Updates only the release body — it does not rebuild
-  # the Docker image, re-upload assets, or submit to the extension stores. Use
-  # it to backfill releases whose notes predate a CHANGELOG fix.
+  # Manual re-run that regenerates the auto-generated release notes for an
+  # existing tag from its merged PRs. Updates only the release body — it does not
+  # rebuild the Docker image, re-upload assets, or submit to the extension stores.
   workflow_dispatch:
     inputs:
       tag:
@@ -72,6 +71,10 @@ jobs:
       - name: Build store-ready artifacts (Chrome + Firefox)
         if: github.event_name == 'push'
         run: |
+          # The published extension version is the release tag (v1.2.3 -> 1.2.3),
+          # so the manifest always matches the GitHub Release. wxt.config.ts reads
+          # ENGRAM_EXTENSION_VERSION; without it WXT falls back to package.json.
+          export ENGRAM_EXTENSION_VERSION="${TAG#v}"
           pnpm --filter extension build:chrome
           pnpm --filter extension build:firefox
       - name: Package zips
@@ -80,23 +83,12 @@ jobs:
           mkdir -p artifacts
           (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-chrome-${TAG}.zip" .)
           (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-firefox-${TAG}.zip" .)
-      - name: Extract release notes from CHANGELOG
-        run: |
-          version="${TAG#v}"
-          awk -v v="$version" '
-            $0 ~ "^## \\[" v "\\]" {grab=1; next}
-            grab && /^## \[/ {exit}
-            grab {print}
-          ' CHANGELOG.md > release-notes.md
-      # When the CHANGELOG carries a section for this version it becomes the
-      # release body; GitHub then appends the auto-generated "What's Changed"
-      # list (generate_release_notes). When the section is missing the body is
-      # empty, so the release still gets the auto-generated PR/commit list
-      # instead of a dead-end placeholder.
+      # GitHub Releases are the single source of truth for release notes:
+      # generate_release_notes builds the "What's Changed" list from the merged
+      # PRs in the tag's range. There is no hand-maintained changelog to extract.
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.TAG }}
-          body_path: release-notes.md
           files: ${{ github.event_name == 'push' && 'artifacts/*.zip' || '' }}
           generate_release_notes: true
 
@@ -107,6 +99,8 @@ jobs:
     needs: release
     if: ${{ github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -117,6 +111,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build store-ready zips (Chrome + Firefox + sources)
         run: |
+          # Stamp the tag version into the Chrome zip, Firefox zip, and sources zip.
+          export ENGRAM_EXTENSION_VERSION="${TAG#v}"
           pnpm --filter extension zip
           pnpm --filter extension zip -b firefox
       - name: Resolve artifact paths

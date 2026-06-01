@@ -1,7 +1,7 @@
 # Listing copy
 
 Reusable text for the Chrome Web Store and Firefox AMO listings. Keep this in
-sync with the manifest (`apps/extension/wxt.config.ts`) and `CHANGELOG.md`.
+sync with the manifest (`apps/extension/wxt.config.ts`).
 
 ## Name
 
