@@ -9,6 +9,22 @@ Declared in the manifest:
 
 - `permissions: ["activeTab", "storage", "scripting", "contextMenus"]`
 - `optional_host_permissions: ["*://*/*"]`
+- `browser_specific_settings.gecko.data_collection_permissions: { required: ["websiteContent"] }`
+
+## Data collection (Firefox AMO)
+
+```
+required: ["websiteContent"]
+```
+
+Firefox requires every new extension to declare its data collection. Engram's
+single purpose is to transmit the content of the page you clip to your server,
+so we declare websiteContent as a required collection. Mozilla defines "data"
+broadly — all data the extension transmits, including its core functionality and
+regardless of destination — so this is declared even though the data goes only
+to the user's own self-hosted server and never to the extension's authors or any
+third party. No telemetry, analytics, or technical/interaction data is collected,
+so there is no optional set.
 
 ## activeTab
 
