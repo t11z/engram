@@ -1,13 +1,7 @@
 # Changelog
 
-The authoritative changelog lives in the repository and follows
-[Keep a Changelog](https://keepachangelog.com/):
+GitHub Releases are the source of truth for what changed in each version. Each
+release lists the merged pull requests that went into it.
 
-- [CHANGELOG.md on GitHub](https://github.com/t11z/engram/blob/main/CHANGELOG.md)
-- [Releases](https://github.com/t11z/engram/releases)
-
-## Unreleased
-
-- Project bootstrap: implementation plan, governance docs, ADRs, CI/CD,
-  deployment scaffolding, this documentation site, and the issue-first workflow
-  automation.
+- **[Releases](https://github.com/t11z/engram/releases)** — every tagged version
+  with its notes and downloadable artifacts.

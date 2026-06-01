@@ -79,8 +79,10 @@ on the `PUBLISH_EXTENSION` repo variable); see
 
 ## Before submitting a store update
 
-- Bump the version in `package.json` (WXT derives the manifest version from it)
-  and note it in `CHANGELOG.md`.
+- The published version is the release tag (`v1.2.3` → `1.2.3`): `release.yml`
+  sets `ENGRAM_EXTENSION_VERSION` from the tag so the manifest matches the GitHub
+  Release. No manual `package.json` bump is needed to ship; the committed
+  `version` is only the local-dev fallback when that env var is unset.
 - Re-check the permission list is still minimal; update
   [`store/permissions.md`](./store/permissions.md) and the listing.
 - Rebuild both targets from a clean tree; test load-unpacked on both browsers.

@@ -39,8 +39,8 @@ Decisions of record (not up for revision in v1):
   after a configurable retention (default 30 days). Restore is supported.
 - **Idempotency.** `POST /notes` accepts a client-supplied `idempotency_key`;
   repeated calls return the existing note.
-- **Versioning.** All REST under `/api/v1/`. SemVer releases. `CHANGELOG.md` from
-  day one (Keep a Changelog).
+- **Versioning.** All REST under `/api/v1/`. SemVer releases tagged `v*.*.*`;
+  GitHub Releases (notes auto-generated from merged PRs) are the source of truth.
 - **LLM-agnostic, Claude-validated.** Spec-compliant for any MCP client; tested
   primarily with Claude.
 

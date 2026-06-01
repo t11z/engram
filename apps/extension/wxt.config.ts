@@ -20,6 +20,13 @@ export default defineConfig({
     build: { sourcemap: true },
   }),
   manifest: {
+    // Released artifacts derive their version from the git tag: release.yml sets
+    // ENGRAM_EXTENSION_VERSION to the tag (v0.3.0 -> 0.3.0) before building, so the
+    // Chrome/Firefox/sources zips always match the GitHub Release. Locally the key
+    // is absent, so WXT falls back to package.json. See store/README.md.
+    ...(process.env.ENGRAM_EXTENSION_VERSION
+      ? { version: process.env.ENGRAM_EXTENSION_VERSION }
+      : {}),
     name: "Engram",
     description: "Clip the active tab to Markdown and save it to your Engram server.",
     action: {
