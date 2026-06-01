@@ -64,6 +64,19 @@ this extension.
 - **Privacy policy**: <https://t11z.github.io/engram/privacy/>
 - **Documentation**: <https://t11z.github.io/engram/>
 
+## Data collection disclosure
+
+```
+required: websiteContent
+
+When the user clicks the toolbar icon, the extension reads the current page's
+content and transmits it to the user's own self-hosted Engram server to save it
+as a note. This is the extension's sole purpose. The page content goes only to
+the server URL the user configures; the extension's authors operate no servers
+and receive no data. No telemetry, analytics, or technical/interaction data is
+collected.
+```
+
 ## Notes for reviewers
 
 ```

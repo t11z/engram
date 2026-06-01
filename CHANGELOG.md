@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Browser extension: declare `data_collection_permissions` in the Firefox
+  manifest (`browser_specific_settings.gecko`), required by AMO for new
+  extensions since 2025-11-03. Engram clips and transmits page content to the
+  user's server, so it declares `required: ["websiteContent"]`; no telemetry or
+  other data is collected. Resolves the AMO validation error that blocked
+  submission. The store kit (`apps/extension/store/`) documents the disclosure.
+
 ### Added
 - A static, interactive demo of the web UI published on GitHub Pages at
   <https://t11z.github.io/engram/demo/>. Built with `VITE_ENGRAM_DEMO=1`, the UI

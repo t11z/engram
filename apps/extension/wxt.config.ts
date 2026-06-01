@@ -35,6 +35,13 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: "engram@t11z.github.io",
+        // Required for new Firefox extensions (AMO, since 2025-11-03). Clipping
+        // transmits the page's content to the user's configured server, so we
+        // declare websiteContent as a required collection. No telemetry or other
+        // data is collected, so there is no optional set. See store/permissions.md.
+        data_collection_permissions: {
+          required: ["websiteContent"],
+        },
       },
     },
   },
