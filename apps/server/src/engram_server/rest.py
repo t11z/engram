@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Query, Response
 
 from engram_core import LinkService, Note, NoteCreate, NoteService
 
-from .schemas import LinkCreate, NoteListResponse, SearchResponse
+from .schemas import LinkCreate, NoteListResponse, RestoreRequest, SearchResponse
 from .service import get_link_service, get_service
 
 router = APIRouter(prefix="/api/v1")
@@ -51,20 +51,33 @@ async def list_notes(
     return NoteListResponse(items=items, next_cursor=next_cursor)
 
 
-@router.get("/notes/{note_id}", response_model=Note)
-async def get_note(note_id: str, service: ServiceDep) -> Note:
-    return service.get(note_id)
+@router.post("/notes/restore", response_model=Note)
+async def restore_note(data: RestoreRequest, service: ServiceDep) -> Note:
+    return service.restore(data.path)
 
 
-@router.delete("/notes/{note_id}", status_code=204)
-async def delete_note(note_id: str, service: ServiceDep) -> Response:
-    service.delete(note_id)
+@router.get("/notes/by-path/{path:path}", response_model=Note)
+async def get_note_by_path(path: str, service: ServiceDep) -> Note:
+    return service.get(path)
+
+
+@router.delete("/notes/by-path/{path:path}", status_code=204)
+async def delete_note_by_path(path: str, service: ServiceDep) -> Response:
+    service.delete(path)
     return Response(status_code=204)
 
 
-@router.post("/notes/{note_id}/restore", response_model=Note)
-async def restore_note(note_id: str, service: ServiceDep) -> Note:
-    return service.restore(note_id)
+@router.get("/notes/{handle}", response_model=Note)
+async def get_note(handle: str, service: ServiceDep) -> Note:
+    """Fetch a note by its id alias or a top-level path handle (use
+    ``/notes/by-path/{path}`` for nested paths)."""
+    return service.get(handle)
+
+
+@router.delete("/notes/{handle}", status_code=204)
+async def delete_note(handle: str, service: ServiceDep) -> Response:
+    service.delete(handle)
+    return Response(status_code=204)
 
 
 @router.get("/search", response_model=SearchResponse)

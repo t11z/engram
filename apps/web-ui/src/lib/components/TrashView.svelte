@@ -4,8 +4,8 @@
   import { ApiError, listTrash, restore, type NoteSummary } from "$lib/api";
   import { mutations, notifyMutation } from "$lib/refresh";
 
-  // Trashed notes are not viewable (GET /notes/{id} is live-only), so rows are
-  // not clickable — only restorable.
+  // Trashed notes are not viewable (note reads are live-only), so rows are
+  // not clickable — only restorable by their trash path.
   let items = $state<NoteSummary[]>([]);
   let cursor = $state<string | null>(null);
   let loading = $state(false);
@@ -27,9 +27,9 @@
     }
   }
 
-  async function doRestore(id: string): Promise<void> {
+  async function doRestore(path: string): Promise<void> {
     try {
-      await restore(id);
+      await restore(path);
       notifyMutation();
     } catch (e) {
       if (!(e instanceof ApiError && e.isAuth)) {
@@ -45,7 +45,7 @@
 </script>
 
 <div class="overflow-hidden rounded-stamp border border-ink-600 bg-ink-800">
-  {#each items as item (item.id)}
+  {#each items as item (item.path)}
     <div class="flex items-center gap-3 border-b border-ink-600 px-4 py-3 last:border-b-0">
       <div class="flex-1 min-w-0">
         <div class="truncate font-sans text-sm font-medium text-chalk-300">{item.title}</div>
@@ -54,7 +54,7 @@
       <button
         type="button"
         class="shrink-0 rounded border border-ink-600 px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-chalk-500 transition-colors duration-150 hover:border-sage hover:text-sage"
-        onclick={() => doRestore(item.id)}
+        onclick={() => doRestore(item.path)}
       >
         Restore
       </button>

@@ -32,14 +32,17 @@ describe("demo api (mock store)", () => {
   });
 
   it("returns a full note body via getNote", async () => {
-    const id = seedNotes[0].id;
-    const note = await api.getNote(id);
-    expect(note.id).toBe(id);
+    const path = seedNotes[0].path;
+    const note = await api.getNote(path);
+    expect(note.path).toBe(path);
     expect(note.body).toContain("#");
   });
 
-  it("rejects getNote for an unknown id with a 404", async () => {
-    await expect(api.getNote("does-not-exist")).rejects.toMatchObject({ status: 404, code: "not_found" });
+  it("rejects getNote for an unknown path with a 404", async () => {
+    await expect(api.getNote("does-not-exist.md")).rejects.toMatchObject({
+      status: 404,
+      code: "not_found",
+    });
   });
 
   it("searches title and body and ranks title hits higher", async () => {
@@ -55,26 +58,27 @@ describe("demo api (mock store)", () => {
   });
 
   it("moves a note to trash on delete and restores it", async () => {
-    const id = seedNotes[0].id;
-    await api.deleteNote(id);
+    const path = seedNotes[0].path;
+    const trashPath = `.trash/${path}`;
+    await api.deleteNote(path);
 
     const afterDelete = await api.listNotes();
-    expect(afterDelete.items.find((n) => n.id === id)).toBeUndefined();
+    expect(afterDelete.items.find((n) => n.path === path)).toBeUndefined();
 
     const trash = await api.listTrash();
-    expect(trash.items.find((n) => n.id === id)).toBeDefined();
+    expect(trash.items.find((n) => n.path === trashPath)).toBeDefined();
     expect(trash.items.length).toBe(seedTrash.length + 1);
 
-    const restored = await api.restore(id);
-    expect(restored.id).toBe(id);
+    const restored = await api.restore(trashPath);
+    expect(restored.path).toBe(path);
 
     const afterRestore = await api.listNotes();
-    expect(afterRestore.items.find((n) => n.id === id)).toBeDefined();
+    expect(afterRestore.items.find((n) => n.path === path)).toBeDefined();
     const trashAfter = await api.listTrash();
-    expect(trashAfter.items.find((n) => n.id === id)).toBeUndefined();
+    expect(trashAfter.items.find((n) => n.path === trashPath)).toBeUndefined();
   });
 
-  it("rejects restore for an unknown id", async () => {
-    await expect(api.restore("nope")).rejects.toMatchObject({ status: 404 });
+  it("rejects restore for an unknown path", async () => {
+    await expect(api.restore(".trash/nope.md")).rejects.toMatchObject({ status: 404 });
   });
 });

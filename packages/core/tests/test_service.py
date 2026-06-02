@@ -38,11 +38,13 @@ def _create(
 
 def test_create_then_get_and_list(service: NoteService) -> None:
     note = _create(service, "Hello", "the body")
-    fetched = service.get(note.id)
+    assert note.id is None  # id injection is off by default; path is the handle
+    assert note.path == "hello.md"
+    fetched = service.get(note.path)
     assert fetched.title == "Hello"
     assert fetched.body == "the body"
     summaries, cursor = service.list_notes()
-    assert [s.id for s in summaries] == [note.id]
+    assert [s.path for s in summaries] == [note.path]
     assert cursor is None
 
 
@@ -51,61 +53,76 @@ def test_idempotent_create_returns_existing(service: NoteService) -> None:
     second, c2 = service.create(NoteCreate(title="A", body="x", idempotency_key="k"), now=NOW)
     assert c1 is True
     assert c2 is False
-    assert first.id == second.id
+    assert first.path == second.path
     summaries, _ = service.list_notes()
     assert len(summaries) == 1
 
 
 def test_idempotency_ignores_trashed_match(service: NoteService) -> None:
     first, _ = service.create(NoteCreate(title="A", body="x", idempotency_key="k"), now=NOW)
-    service.delete(first.id, now=NOW)
+    service.delete(first.path, now=NOW)
     second, created = service.create(NoteCreate(title="A", body="x", idempotency_key="k"), now=NOW)
     assert created is True
-    assert second.id != first.id
+    live, _ = service.list_notes()
+    assert [s.path for s in live] == [second.path]
 
 
 def test_get_missing_raises(service: NoteService) -> None:
     with pytest.raises(NoteNotFound):
-        service.get("01KSB998H8WTTDZCMR8C67KBR7")
+        service.get("nope.md")
+
+
+def test_get_by_id_alias(tmp_path: Path) -> None:
+    svc = NoteService(
+        Settings(vault_path=tmp_path / "v", index_path=tmp_path / "i.db", inject_id=True)
+    )
+    svc.startup()
+    try:
+        note = _create(svc, "Aliased")
+        assert note.id is not None
+        assert svc.get(note.id).path == note.path  # addressable by id alias too
+    finally:
+        svc.close()
 
 
 def test_delete_moves_to_trash(service: NoteService) -> None:
     note = _create(service, "Doomed")
-    service.delete(note.id, now=NOW)
+    service.delete(note.path, now=NOW)
     with pytest.raises(NoteNotFound):
-        service.get(note.id)
+        service.get(note.path)
     live, _ = service.list_notes()
     assert live == []
     trash, _ = service.list_trash()
-    assert [s.id for s in trash] == [note.id]
+    assert [s.path for s in trash] == [".trash/doomed.md"]
 
 
 def test_restore(service: NoteService) -> None:
     note = _create(service, "Comeback")
-    service.delete(note.id, now=NOW)
-    restored = service.restore(note.id)
-    assert restored.id == note.id
+    service.delete(note.path, now=NOW)
+    trash_path = service.list_trash()[0][0].path
+    restored = service.restore(trash_path)
+    assert restored.path == note.path
     live, _ = service.list_notes()
-    assert [s.id for s in live] == [note.id]
+    assert [s.path for s in live] == [note.path]
     assert service.list_trash()[0] == []
 
 
 def test_restore_non_trashed_raises(service: NoteService) -> None:
     with pytest.raises(NoteNotInTrash):
-        service.restore("01KSB998H8WTTDZCMR8C67KBR7")
+        service.restore(".trash/missing.md")
 
 
 def test_purge_expired_trash(service: NoteService) -> None:
     note = _create(service, "Old")
-    service.delete(note.id, now=NOW - timedelta(days=40))
+    service.delete(note.path, now=NOW - timedelta(days=40))
     purged = service.purge_expired_trash(now=NOW)
-    assert purged == [note.id]
+    assert purged == [".trash/old.md"]
     assert service.list_trash()[0] == []
 
 
 def test_purge_keeps_recent(service: NoteService) -> None:
     note = _create(service, "Recent")
-    service.delete(note.id, now=NOW - timedelta(days=5))
+    service.delete(note.path, now=NOW - timedelta(days=5))
     assert service.purge_expired_trash(now=NOW) == []
     assert len(service.list_trash()[0]) == 1
 

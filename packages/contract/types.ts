@@ -39,25 +39,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/notes/{note_id}": {
+    "/api/v1/notes/by-path/{path}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Note */
-        get: operations["get_note_api_v1_notes__note_id__get"];
+        /** Get Note By Path */
+        get: operations["get_note_by_path_api_v1_notes_by_path__path__get"];
         put?: never;
         post?: never;
-        /** Delete Note */
-        delete: operations["delete_note_api_v1_notes__note_id__delete"];
+        /** Delete Note By Path */
+        delete: operations["delete_note_by_path_api_v1_notes_by_path__path__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/notes/{note_id}/restore": {
+    "/api/v1/notes/restore": {
         parameters: {
             query?: never;
             header?: never;
@@ -67,8 +67,30 @@ export interface paths {
         get?: never;
         put?: never;
         /** Restore Note */
-        post: operations["restore_note_api_v1_notes__note_id__restore_post"];
+        post: operations["restore_note_api_v1_notes_restore_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/{handle}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Note
+         * @description Fetch a note by its id alias or a top-level path handle (use
+         *     ``/notes/by-path/{path}`` for nested paths).
+         */
+        get: operations["get_note_api_v1_notes__handle__get"];
+        put?: never;
+        post?: never;
+        /** Delete Note */
+        delete: operations["delete_note_api_v1_notes__handle__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -168,7 +190,7 @@ export interface components {
             /** Created At */
             created_at: string;
             /** Id */
-            id: string;
+            id?: string | null;
             /** Idempotency Key */
             idempotency_key?: string | null;
             /** Path */
@@ -213,7 +235,7 @@ export interface components {
          */
         NoteSummary: {
             /** Id */
-            id: string;
+            id?: string | null;
             /** Path */
             path: string;
             /** Tags */
@@ -222,6 +244,14 @@ export interface components {
             title: string;
             /** Updated At */
             updated_at: string;
+        };
+        /**
+         * RestoreRequest
+         * @description Input for ``POST /api/v1/notes/restore``: the trash-relative path to restore.
+         */
+        RestoreRequest: {
+            /** Path */
+            path: string;
         };
         /** SearchResponse */
         SearchResponse: {
@@ -234,7 +264,7 @@ export interface components {
          */
         SearchResult: {
             /** Id */
-            id: string;
+            id?: string | null;
             /** Path */
             path: string;
             /** Score */
@@ -387,12 +417,12 @@ export interface operations {
             };
         };
     };
-    get_note_api_v1_notes__note_id__get: {
+    get_note_by_path_api_v1_notes_by_path__path__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                note_id: string;
+                path: string;
             };
             cookie?: never;
         };
@@ -418,12 +448,12 @@ export interface operations {
             };
         };
     };
-    delete_note_api_v1_notes__note_id__delete: {
+    delete_note_by_path_api_v1_notes_by_path__path__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                note_id: string;
+                path: string;
             };
             cookie?: never;
         };
@@ -447,12 +477,45 @@ export interface operations {
             };
         };
     };
-    restore_note_api_v1_notes__note_id__restore_post: {
+    restore_note_api_v1_notes_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_note_api_v1_notes__handle__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                note_id: string;
+                handle: string;
             };
             cookie?: never;
         };
@@ -466,6 +529,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Note"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_note_api_v1_notes__handle__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handle: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

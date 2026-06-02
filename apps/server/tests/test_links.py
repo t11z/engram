@@ -93,7 +93,8 @@ def test_create_link_returns_201_with_note(
     assert note["title"] == "A Real Title"
     assert note["source_url"] == "https://example.com/article"
     assert "engram ingests" in note["body"].lower()
-    assert len(note["id"]) == 26
+    assert note["id"] is None
+    assert note["path"].endswith(".md")
 
 
 @pytest.mark.parametrize(

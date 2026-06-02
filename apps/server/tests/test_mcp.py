@@ -15,8 +15,8 @@ TOKEN = "test-token"
 
 def test_save_and_read_note_tools(client: TestClient) -> None:
     saved = mcp_server.save_note(title="MCP note", body="hello from mcp", tags=["t"])
-    assert set(saved) == {"id"}
-    note = mcp_server.read_note(id=saved["id"])
+    assert set(saved) == {"path"}
+    note = mcp_server.read_note(path=str(saved["path"]))
     assert note["title"] == "MCP note"
     assert note["body"] == "hello from mcp"
     assert note["tags"] == ["t"]
@@ -25,15 +25,15 @@ def test_save_and_read_note_tools(client: TestClient) -> None:
 def test_search_and_list_tools(client: TestClient) -> None:
     hits = mcp_server.search_notes(query="postgres")
     assert hits
-    assert {"id", "title", "snippet", "score"} <= set(hits[0])
+    assert {"path", "title", "snippet", "score"} <= set(hits[0])
     listed = mcp_server.list_notes(limit=5)
     assert listed
-    assert {"id", "title", "tags"} <= set(listed[0])
+    assert {"path", "title", "tags"} <= set(listed[0])
 
 
 def test_delete_note_tool(client: TestClient) -> None:
-    nid = mcp_server.save_note(title="del", body="x")["id"]
-    assert mcp_server.delete_note(id=nid) == {"id": nid, "status": "deleted"}
+    path = str(mcp_server.save_note(title="del", body="x")["path"])
+    assert mcp_server.delete_note(path=path) == {"path": path, "status": "deleted"}
 
 
 def _initialize(client: TestClient, auth: dict[str, str]) -> dict[str, str]:

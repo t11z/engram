@@ -1,10 +1,10 @@
 """SQLite FTS5 search index — a rebuildable cache over the filesystem.
 
-Holds a ``notes`` metadata table (for typed sort/filter/pagination, idempotency
-lookup, and path resolution) plus a standalone ``notes_fts`` FTS5 table keyed by a
-shared rowid. Trashed notes keep their rows (``deleted_at`` set) and are excluded
-from live search/list by the query filter. The body text lives only in the FTS
-table; full note content is always read from disk via the path.
+Rows are keyed by a stable surrogate ``noteid`` (also the FTS rowid), with the
+vault-relative ``path`` as the canonical external handle and an optional ULID
+``id`` alias. A note is addressed by path or by id; the surrogate keeps the link
+graph and FTS rows stable across renames. Trashed notes keep their rows
+(``deleted_at`` set) and are excluded from live search/list by the query filter.
 """
 
 from __future__ import annotations
@@ -22,7 +22,8 @@ from .models import Note, NoteSummary, OutgoingLink, SearchResult, from_rfc3339,
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS notes (
-    id              TEXT PRIMARY KEY,
+    noteid          INTEGER PRIMARY KEY,
+    id              TEXT,
     path            TEXT NOT NULL,
     title           TEXT NOT NULL,
     tags_json       TEXT NOT NULL DEFAULT '[]',
@@ -34,18 +35,20 @@ CREATE TABLE IF NOT EXISTS notes (
     mtime           REAL NOT NULL,
     deleted_at      TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_notes_live ON notes(deleted_at, updated_at DESC, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_id ON notes(id) WHERE id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_path ON notes(path);
+CREATE INDEX IF NOT EXISTS idx_notes_live ON notes(deleted_at, updated_at DESC, noteid DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_idem ON notes(idempotency_key)
     WHERE idempotency_key IS NOT NULL AND deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS links (
-    src_id    TEXT NOT NULL,
-    dst_raw   TEXT NOT NULL,
-    link_type TEXT NOT NULL,
-    dst_id    TEXT
+    src_noteid INTEGER NOT NULL,
+    dst_raw    TEXT NOT NULL,
+    link_type  TEXT NOT NULL,
+    dst_noteid INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_links_src ON links(src_id);
-CREATE INDEX IF NOT EXISTS idx_links_dst ON links(dst_id);
+CREATE INDEX IF NOT EXISTS idx_links_src ON links(src_noteid);
+CREATE INDEX IF NOT EXISTS idx_links_dst ON links(dst_noteid);
 """
 
 _FTS = (
@@ -109,12 +112,16 @@ class SearchIndex:
 
     def upsert(
         self, note: Note, *, size: int, mtime: float, deleted_at: datetime | None = None
-    ) -> None:
+    ) -> int:
+        """Insert or update a note's row, matched by ``id`` (if any) else ``path``.
+        Returns the surrogate ``noteid``.
+        """
         deleted = to_rfc3339(deleted_at) if deleted_at is not None else None
         fts_tags = " ".join(note.tags)
         with self.conn:
-            row = self.conn.execute("SELECT rowid FROM notes WHERE id = ?", (note.id,)).fetchone()
+            noteid = self._match_noteid(note)
             values = (
+                note.id,
                 note.path,
                 note.title,
                 json.dumps(list(note.tags)),
@@ -126,61 +133,61 @@ class SearchIndex:
                 mtime,
                 deleted,
             )
-            if row is None:
+            if noteid is None:
                 cur = self.conn.execute(
-                    "INSERT INTO notes(path,title,tags_json,tags_text,created_at,updated_at,"
-                    "idempotency_key,size,mtime,deleted_at,id) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                    (*values, note.id),
+                    "INSERT INTO notes(id,path,title,tags_json,tags_text,created_at,updated_at,"
+                    "idempotency_key,size,mtime,deleted_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    values,
                 )
-                rowid = cur.lastrowid
+                noteid = int(cur.lastrowid or 0)
             else:
-                rowid = row[0]
                 self.conn.execute(
-                    "UPDATE notes SET path=?,title=?,tags_json=?,tags_text=?,created_at=?,"
-                    "updated_at=?,idempotency_key=?,size=?,mtime=?,deleted_at=? WHERE id=?",
-                    (*values, note.id),
+                    "UPDATE notes SET id=?,path=?,title=?,tags_json=?,tags_text=?,created_at=?,"
+                    "updated_at=?,idempotency_key=?,size=?,mtime=?,deleted_at=? WHERE noteid=?",
+                    (*values, noteid),
                 )
-                self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (rowid,))
+                self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (noteid,))
             self.conn.execute(
                 "INSERT INTO notes_fts(rowid, title, body, tags) VALUES(?,?,?,?)",
-                (rowid, note.title, note.body, fts_tags),
+                (noteid, note.title, note.body, fts_tags),
             )
-            self.conn.execute("DELETE FROM links WHERE src_id = ?", (note.id,))
+            self.conn.execute("DELETE FROM links WHERE src_noteid = ?", (noteid,))
             if deleted_at is None:
-                link_rows = [
-                    (note.id, link.target, link.type, None)
-                    for link in extract_links(note.body)
+                rows = [
+                    (noteid, link.target, link.type, None) for link in extract_links(note.body)
                 ]
-                if link_rows:
+                if rows:
                     self.conn.executemany(
-                        "INSERT INTO links(src_id, dst_raw, link_type, dst_id) "
+                        "INSERT INTO links(src_noteid, dst_raw, link_type, dst_noteid) "
                         "VALUES(?,?,?,?)",
-                        link_rows,
+                        rows,
                     )
+            return noteid
 
-    def mark_trashed(self, note_id: str, path: str, deleted_at: datetime) -> None:
+    def move_row(
+        self, old_path: str, new_path: str, *, size: int, mtime: float, deleted_at: datetime | None
+    ) -> None:
+        """Update the path/state of the row at ``old_path`` (used by delete/restore,
+        where the file moves but the note's identity is unchanged).
+        """
+        deleted = to_rfc3339(deleted_at) if deleted_at is not None else None
         with self.conn:
             self.conn.execute(
-                "UPDATE notes SET deleted_at = ?, path = ? WHERE id = ?",
-                (to_rfc3339(deleted_at), path, note_id),
+                "UPDATE notes SET path=?, size=?, mtime=?, deleted_at=? WHERE path=?",
+                (new_path, size, mtime, deleted, old_path),
             )
 
-    def unmark_trashed(self, note_id: str, path: str) -> None:
+    def remove_noteid(self, noteid: int) -> None:
         with self.conn:
-            self.conn.execute(
-                "UPDATE notes SET deleted_at = NULL, path = ? WHERE id = ?",
-                (path, note_id),
-            )
+            self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (noteid,))
+            self.conn.execute("DELETE FROM notes WHERE noteid = ?", (noteid,))
+            self.conn.execute("DELETE FROM links WHERE src_noteid = ?", (noteid,))
+            self.conn.execute("UPDATE links SET dst_noteid = NULL WHERE dst_noteid = ?", (noteid,))
 
-    def remove(self, note_id: str) -> None:
-        with self.conn:
-            row = self.conn.execute("SELECT rowid FROM notes WHERE id = ?", (note_id,)).fetchone()
-            if row is None:
-                return
-            self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (row[0],))
-            self.conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
-            self.conn.execute("DELETE FROM links WHERE src_id = ?", (note_id,))
-            self.conn.execute("UPDATE links SET dst_id = NULL WHERE dst_id = ?", (note_id,))
+    def remove_path(self, path: str) -> None:
+        row = self.conn.execute("SELECT noteid FROM notes WHERE path = ?", (path,)).fetchone()
+        if row is not None:
+            self.remove_noteid(int(row[0]))
 
     def clear(self) -> None:
         with self.conn:
@@ -189,72 +196,72 @@ class SearchIndex:
             self.conn.execute("DELETE FROM links")
 
     def resolve_links(self) -> None:
-        """Recompute ``dst_id`` for every link row against the current live notes.
-
-        Cheap to run after any single write and once at the end of a bulk
-        reconcile/reindex; keeps dangling links and rename effects globally
-        consistent without incremental bookkeeping.
-        """
+        """Recompute ``dst_noteid`` for every link against the current live notes."""
         with self.conn:
             live = self.conn.execute(
-                "SELECT id, path FROM notes WHERE deleted_at IS NULL"
+                "SELECT noteid, path FROM notes WHERE deleted_at IS NULL"
             ).fetchall()
             resolver = LinkResolver([str(r[1]) for r in live])
-            path_to_id = {str(r[1]): str(r[0]) for r in live}
+            path_to_noteid = {str(r[1]): int(r[0]) for r in live}
             src_paths = {
-                str(r[0]): str(r[1])
-                for r in self.conn.execute("SELECT id, path FROM notes").fetchall()
+                int(r[0]): str(r[1])
+                for r in self.conn.execute("SELECT noteid, path FROM notes").fetchall()
             }
-            updates: list[tuple[str | None, int]] = []
-            for rowid, src_id, dst_raw, link_type in self.conn.execute(
-                "SELECT rowid, src_id, dst_raw, link_type FROM links"
+            updates: list[tuple[int | None, int]] = []
+            for rowid, src_noteid, dst_raw, link_type in self.conn.execute(
+                "SELECT rowid, src_noteid, dst_raw, link_type FROM links"
             ).fetchall():
-                src_path = src_paths.get(str(src_id), "")
+                src_path = src_paths.get(int(src_noteid), "")
                 dst_path = resolver.resolve(str(link_type), str(dst_raw), src_path)
-                dst_id = path_to_id.get(dst_path) if dst_path is not None else None
-                updates.append((dst_id, int(rowid)))
+                dst_noteid = path_to_noteid.get(dst_path) if dst_path is not None else None
+                updates.append((dst_noteid, int(rowid)))
             if updates:
-                self.conn.executemany("UPDATE links SET dst_id = ? WHERE rowid = ?", updates)
+                self.conn.executemany(
+                    "UPDATE links SET dst_noteid = ? WHERE rowid = ?", updates
+                )
 
     # --- reads --------------------------------------------------------------
 
-    def get_path(self, note_id: str) -> str | None:
+    def resolve_handle(self, handle: str) -> str | None:
+        """Live path for a handle that is either a note id or a vault-relative path."""
         row = self.conn.execute(
-            "SELECT path FROM notes WHERE id = ? AND deleted_at IS NULL", (note_id,)
+            "SELECT path FROM notes WHERE id = ? AND deleted_at IS NULL", (handle,)
+        ).fetchone()
+        if row is not None:
+            return str(row[0])
+        row = self.conn.execute(
+            "SELECT path FROM notes WHERE path = ? AND deleted_at IS NULL", (handle,)
         ).fetchone()
         return None if row is None else str(row[0])
 
     def find_by_idempotency_key(self, key: str) -> str | None:
         row = self.conn.execute(
-            "SELECT id FROM notes WHERE idempotency_key = ? AND deleted_at IS NULL", (key,)
+            "SELECT path FROM notes WHERE idempotency_key = ? AND deleted_at IS NULL", (key,)
         ).fetchone()
         return None if row is None else str(row[0])
 
-    def backlinks(self, note_id: str) -> list[NoteSummary]:
-        """Live notes that link to ``note_id`` (newest first)."""
+    def backlinks(self, handle: str) -> list[NoteSummary]:
+        """Live notes that link to the note identified by ``handle`` (newest first)."""
+        noteid = self._resolve_noteid(handle, live_only=True)
+        if noteid is None:
+            return []
         sql = (
             "SELECT DISTINCT n.id, n.title, n.tags_json, n.updated_at, n.path "
-            "FROM links l JOIN notes n ON n.id = l.src_id "
-            "WHERE l.dst_id = ? AND n.deleted_at IS NULL "
-            "ORDER BY n.updated_at DESC, n.id DESC"
+            "FROM links l JOIN notes n ON n.noteid = l.src_noteid "
+            "WHERE l.dst_noteid = ? AND n.deleted_at IS NULL "
+            "ORDER BY n.updated_at DESC, n.noteid DESC"
         )
-        return [
-            NoteSummary(
-                id=str(r[0]),
-                title=str(r[1]),
-                tags=list(json.loads(r[2])),
-                updated_at=from_rfc3339(str(r[3])),
-                path=str(r[4]),
-            )
-            for r in self.conn.execute(sql, (note_id,)).fetchall()
-        ]
+        return [_summary(r) for r in self.conn.execute(sql, (noteid,)).fetchall()]
 
-    def outgoing_links(self, note_id: str) -> list[OutgoingLink]:
-        """Outgoing references from ``note_id``; ``resolved_*`` is None if dangling."""
+    def outgoing_links(self, handle: str) -> list[OutgoingLink]:
+        """Outgoing references from ``handle``; ``resolved_*`` is None if dangling."""
+        noteid = self._resolve_noteid(handle, live_only=True)
+        if noteid is None:
+            return []
         sql = (
-            "SELECT l.dst_raw, l.link_type, l.dst_id, n.path "
-            "FROM links l LEFT JOIN notes n ON n.id = l.dst_id AND n.deleted_at IS NULL "
-            "WHERE l.src_id = ?"
+            "SELECT l.dst_raw, l.link_type, n.id, n.path "
+            "FROM links l LEFT JOIN notes n ON n.noteid = l.dst_noteid AND n.deleted_at IS NULL "
+            "WHERE l.src_noteid = ?"
         )
         return [
             OutgoingLink(
@@ -263,14 +270,14 @@ class SearchIndex:
                 resolved_id=str(r[2]) if r[2] is not None else None,
                 resolved_path=str(r[3]) if r[3] is not None else None,
             )
-            for r in self.conn.execute(sql, (note_id,)).fetchall()
+            for r in self.conn.execute(sql, (noteid,)).fetchall()
         ]
 
-    def all_rows(self) -> Iterator[tuple[str, str, int, float, str | None]]:
+    def all_rows(self) -> Iterator[tuple[int, str | None, str, int, float, str | None]]:
         for row in self.conn.execute(
-            "SELECT id, path, size, mtime, deleted_at FROM notes"
+            "SELECT noteid, id, path, size, mtime, deleted_at FROM notes"
         ).fetchall():
-            yield (str(row[0]), str(row[1]), int(row[2]), float(row[3]), row[4])
+            yield (int(row[0]), row[1], str(row[2]), int(row[3]), float(row[4]), row[5])
 
     def search(self, query: str, *, tag: str | None = None, limit: int = 20) -> list[SearchResult]:
         match = _build_match(query)
@@ -285,14 +292,14 @@ class SearchIndex:
         sql = (
             "SELECT n.id, n.title, n.tags_json, n.updated_at, n.path, "
             f"bm25(notes_fts) AS rank, snippet(notes_fts, {_BODY_COL}, '', '', '…', 12) AS snip "
-            "FROM notes_fts JOIN notes n ON n.rowid = notes_fts.rowid "
+            "FROM notes_fts JOIN notes n ON n.noteid = notes_fts.rowid "
             f"WHERE {' AND '.join(conds)} ORDER BY rank LIMIT ?"
         )
         results: list[SearchResult] = []
         for row in self.conn.execute(sql, params).fetchall():
             results.append(
                 SearchResult(
-                    id=str(row[0]),
+                    id=row[0],
                     title=str(row[1]),
                     tags=list(json.loads(row[2])),
                     updated_at=from_rfc3339(str(row[3])),
@@ -315,11 +322,31 @@ class SearchIndex:
 
     # --- internals ----------------------------------------------------------
 
+    def _match_noteid(self, note: Note) -> int | None:
+        if note.id is not None:
+            row = self.conn.execute("SELECT noteid FROM notes WHERE id = ?", (note.id,)).fetchone()
+            if row is not None:
+                return int(row[0])
+        row = self.conn.execute("SELECT noteid FROM notes WHERE path = ?", (note.path,)).fetchone()
+        return None if row is None else int(row[0])
+
+    def _resolve_noteid(self, handle: str, *, live_only: bool) -> int | None:
+        suffix = " AND deleted_at IS NULL" if live_only else ""
+        row = self.conn.execute(
+            f"SELECT noteid FROM notes WHERE id = ?{suffix}", (handle,)
+        ).fetchone()
+        if row is not None:
+            return int(row[0])
+        row = self.conn.execute(
+            f"SELECT noteid FROM notes WHERE path = ?{suffix}", (handle,)
+        ).fetchone()
+        return None if row is None else int(row[0])
+
     def _paginate(
         self, *, trashed: bool, tag: str | None, limit: int, cursor: str | None
     ) -> tuple[list[NoteSummary], str | None]:
         sort_col = "deleted_at" if trashed else "updated_at"
-        key_idx = 4 if trashed else 3  # deleted_at vs updated_at in the SELECT below
+        key_idx = 5 if trashed else 3  # deleted_at vs updated_at in the SELECT below
         conds = ["deleted_at IS NOT NULL" if trashed else "deleted_at IS NULL"]
         params: list[object] = []
         if tag:
@@ -327,38 +354,41 @@ class SearchIndex:
             params.append(f"% {tag} %")
         if cursor is not None:
             key, cid = _decode_cursor(cursor)
-            conds.append(f"({sort_col}, id) < (?, ?)")
-            params.extend([key, cid])
+            conds.append(f"({sort_col}, noteid) < (?, ?)")
+            params.extend([key, int(cid)])
         params.append(limit + 1)
         sql = (
-            "SELECT id, title, tags_json, updated_at, deleted_at, path FROM notes "
-            f"WHERE {' AND '.join(conds)} ORDER BY {sort_col} DESC, id DESC LIMIT ?"
+            "SELECT id, title, tags_json, updated_at, path, deleted_at, noteid FROM notes "
+            f"WHERE {' AND '.join(conds)} ORDER BY {sort_col} DESC, noteid DESC LIMIT ?"
         )
         rows = self.conn.execute(sql, params).fetchall()
         has_more = len(rows) > limit
         rows = rows[:limit]
-        summaries = [
-            NoteSummary(
-                id=str(r[0]),
-                title=str(r[1]),
-                tags=list(json.loads(r[2])),
-                updated_at=from_rfc3339(str(r[3])),
-                path=str(r[5]),
-            )
-            for r in rows
-        ]
-        next_cursor = _encode_cursor(str(rows[-1][key_idx]), str(rows[-1][0])) if has_more else None
+        summaries = [_summary(r) for r in rows]
+        next_cursor = (
+            _encode_cursor(str(rows[-1][key_idx]), str(rows[-1][6])) if has_more else None
+        )
         return summaries, next_cursor
 
 
-def _encode_cursor(key: str, note_id: str) -> str:
-    return base64.urlsafe_b64encode(f"{key}|{note_id}".encode()).decode("ascii")
+def _summary(row: tuple[object, ...]) -> NoteSummary:
+    return NoteSummary(
+        id=row[0] if row[0] is None else str(row[0]),
+        title=str(row[1]),
+        tags=list(json.loads(str(row[2]))),
+        updated_at=from_rfc3339(str(row[3])),
+        path=str(row[4]),
+    )
+
+
+def _encode_cursor(key: str, noteid: str) -> str:
+    return base64.urlsafe_b64encode(f"{key}|{noteid}".encode()).decode("ascii")
 
 
 def _decode_cursor(cursor: str) -> tuple[str, str]:
     try:
         raw = base64.urlsafe_b64decode(cursor.encode("ascii")).decode("utf-8")
-        key, note_id = raw.split("|", 1)
+        key, noteid = raw.split("|", 1)
     except (ValueError, UnicodeDecodeError) as exc:
         raise ValueError("invalid pagination cursor") from exc
-    return key, note_id
+    return key, noteid

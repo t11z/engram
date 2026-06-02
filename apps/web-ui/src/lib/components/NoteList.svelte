@@ -6,7 +6,8 @@
 
   import NoteListItem from "./NoteListItem.svelte";
 
-  let { tag = null, selectedId = null }: { tag?: string | null; selectedId?: string | null } = $props();
+  let { tag = null, selectedPath = null }: { tag?: string | null; selectedPath?: string | null } =
+    $props();
 
   let items = $state<NoteSummary[]>([]);
   let cursor = $state<string | null>(null);
@@ -37,8 +38,8 @@
 </script>
 
 <div class="overflow-hidden rounded-stamp border border-ink-600 bg-ink-800">
-  {#each items as item (item.id)}
-    <NoteListItem {item} selected={item.id === selectedId} />
+  {#each items as item (item.path)}
+    <NoteListItem {item} selected={item.path === selectedPath} />
   {/each}
   {#if items.length === 0 && !loading}
     <p class="px-4 py-6 font-mono text-xs uppercase tracking-widest text-chalk-700">

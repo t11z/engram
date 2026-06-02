@@ -45,19 +45,19 @@ export function listNotes(args: { cursor?: string; tag?: string | null } = {}): 
   return delay(paginate(filtered, args.cursor));
 }
 
-export function getNote(id: string): Promise<Note> {
-  const note = active.find((n) => n.id === id);
+export function getNote(path: string): Promise<Note> {
+  const note = active.find((n) => n.path === path);
   if (!note) {
     return Promise.reject(new ApiError(404, "not_found", "Note not found."));
   }
   return delay({ ...note });
 }
 
-export function deleteNote(id: string): Promise<void> {
-  const idx = active.findIndex((n) => n.id === id);
+export function deleteNote(path: string): Promise<void> {
+  const idx = active.findIndex((n) => n.path === path);
   if (idx !== -1) {
     const [note] = active.splice(idx, 1);
-    trash = [{ ...note }, ...trash];
+    trash = [{ ...note, path: `.trash/${note.path}` }, ...trash];
   }
   return delay(undefined);
 }
@@ -91,13 +91,13 @@ export function listTrash(args: { cursor?: string } = {}): Promise<NoteListRespo
   return delay(paginate([...trash].sort(byUpdatedDesc), args.cursor));
 }
 
-export function restore(id: string): Promise<Note> {
-  const idx = trash.findIndex((n) => n.id === id);
+export function restore(path: string): Promise<Note> {
+  const idx = trash.findIndex((n) => n.path === path);
   if (idx === -1) {
     return Promise.reject(new ApiError(404, "not_found", "Note not found."));
   }
   const [note] = trash.splice(idx, 1);
-  const restored = { ...note };
+  const restored = { ...note, path: note.path.replace(/^\.trash\//, "") };
   active = [restored, ...active];
   return delay({ ...restored });
 }

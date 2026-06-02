@@ -37,56 +37,53 @@ def test_backlinks_and_outgoing(service: NoteService) -> None:
     target = _create(service, "Target")
     source = _create(service, "Source", body=f"links to [[{_stem(target)}]]")
 
-    backlinks = service.get_backlinks(target.id)
-    assert [b.id for b in backlinks] == [source.id]
+    backlinks = service.get_backlinks(target.path)
+    assert [b.path for b in backlinks] == [source.path]
 
-    outgoing = service.get_outgoing_links(source.id)
+    outgoing = service.get_outgoing_links(source.path)
     assert len(outgoing) == 1
     assert outgoing[0].type == "wikilink"
-    assert outgoing[0].resolved_id == target.id
     assert outgoing[0].resolved_path == target.path
 
 
 def test_dangling_link_has_no_resolution(service: NoteService) -> None:
     source = _create(service, "Source", body="points at [[Nowhere]]")
-    outgoing = service.get_outgoing_links(source.id)
+    outgoing = service.get_outgoing_links(source.path)
     assert outgoing[0].resolved_id is None
     assert outgoing[0].resolved_path is None
-    assert service.get_backlinks(source.id) == []
+    assert service.get_backlinks(source.path) == []
 
 
 def test_link_resolves_when_target_created_later(service: NoteService) -> None:
     source = _create(service, "Source", body="see [[late-note]]")
-    assert service.get_outgoing_links(source.id)[0].resolved_id is None
+    assert service.get_outgoing_links(source.path)[0].resolved_path is None
 
-    target, _ = service.create(NoteCreate(title="Late", body="x"), now=NOW)
+    target = _create(service, "Late")
     # Rename the target's file so its basename matches the wikilink, then reindex.
     late_path = service.settings.vault_path / "late-note.md"
     (service.settings.vault_path / target.path).rename(late_path)
     service.reindex()
 
-    resolved = service.get_outgoing_links(source.id)[0]
-    assert resolved.resolved_path == "late-note.md"
+    assert service.get_outgoing_links(source.path)[0].resolved_path == "late-note.md"
 
 
 def test_deleting_target_dangles_backlink(service: NoteService) -> None:
     target = _create(service, "Target")
     source = _create(service, "Source", body=f"to [[{_stem(target)}]]")
-    assert service.get_outgoing_links(source.id)[0].resolved_id == target.id
+    assert service.get_outgoing_links(source.path)[0].resolved_path == target.path
 
-    service.delete(target.id, now=NOW)
-    outgoing = service.get_outgoing_links(source.id)
-    assert outgoing[0].resolved_id is None
+    service.delete(target.path, now=NOW)
+    assert service.get_outgoing_links(source.path)[0].resolved_path is None
 
 
 def test_trashed_note_links_are_dropped(service: NoteService) -> None:
     target = _create(service, "Target")
     source = _create(service, "Source", body=f"to [[{_stem(target)}]]")
-    service.delete(source.id, now=NOW)
+    service.delete(source.path, now=NOW)
     # The deleted source no longer contributes a backlink.
-    assert service.get_backlinks(target.id) == []
+    assert service.get_backlinks(target.path) == []
 
 
 def test_backlinks_for_missing_note_raises(service: NoteService) -> None:
     with pytest.raises(NoteNotFound):
-        service.get_backlinks("01KSB998H8WTTDZCMR8C67KBR7")
+        service.get_backlinks("missing.md")

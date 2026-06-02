@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-MISSING_ID = "01XXXXXXXXXXXXXXXXXXXXXXXX"
+MISSING_PATH = "does-not-exist.md"
 
 
 def test_create_returns_201_with_note(client: TestClient, auth: dict[str, str]) -> None:
@@ -10,7 +10,8 @@ def test_create_returns_201_with_note(client: TestClient, auth: dict[str, str]) 
     assert note["title"] == "Hello"
     assert note["body"] == "world"
     assert note["created_at"].endswith("Z")
-    assert len(note["id"]) == 26
+    assert note["id"] is None  # id injection off by default; path is the handle
+    assert note["path"] == "hello.md"
 
 
 def test_create_is_idempotent(client: TestClient, auth: dict[str, str]) -> None:
@@ -19,31 +20,38 @@ def test_create_is_idempotent(client: TestClient, auth: dict[str, str]) -> None:
     second = client.post("/api/v1/notes", headers=auth, json=payload)
     assert first.status_code == 201
     assert second.status_code == 200
-    assert first.json()["id"] == second.json()["id"]
+    assert first.json()["path"] == second.json()["path"]
 
 
 def test_get_and_missing(client: TestClient, auth: dict[str, str]) -> None:
     created = client.post("/api/v1/notes", headers=auth, json={"title": "G", "body": "b"}).json()
-    assert client.get(f"/api/v1/notes/{created['id']}", headers=auth).status_code == 200
-    missing = client.get(f"/api/v1/notes/{MISSING_ID}", headers=auth)
+    assert client.get(f"/api/v1/notes/by-path/{created['path']}", headers=auth).status_code == 200
+    missing = client.get(f"/api/v1/notes/by-path/{MISSING_PATH}", headers=auth)
     assert missing.status_code == 404
     assert missing.json()["error"]["code"] == "not_found"
 
 
 def test_delete_restore_cycle(client: TestClient, auth: dict[str, str]) -> None:
-    nid = client.post("/api/v1/notes", headers=auth, json={"title": "D", "body": "b"}).json()["id"]
-    d = client.delete(f"/api/v1/notes/{nid}", headers=auth)
+    path = client.post("/api/v1/notes", headers=auth, json={"title": "D", "body": "b"}).json()[
+        "path"
+    ]
+    d = client.delete(f"/api/v1/notes/by-path/{path}", headers=auth)
     assert d.status_code == 204
     assert d.content == b""
-    assert client.get(f"/api/v1/notes/{nid}", headers=auth).status_code == 404
-    restored = client.post(f"/api/v1/notes/{nid}/restore", headers=auth)
+    assert client.get(f"/api/v1/notes/by-path/{path}", headers=auth).status_code == 404
+    trash_path = client.get("/api/v1/trash", headers=auth).json()["items"][0]["path"]
+    restored = client.post("/api/v1/notes/restore", headers=auth, json={"path": trash_path})
     assert restored.status_code == 200
-    # restoring a live note now fails
-    assert client.post(f"/api/v1/notes/{nid}/restore", headers=auth).status_code == 404
+    assert restored.json()["path"] == path
+    # restoring again (the trash entry is gone) now fails
+    assert (
+        client.post("/api/v1/notes/restore", headers=auth, json={"path": trash_path}).status_code
+        == 404
+    )
 
 
 def test_delete_missing_is_404(client: TestClient, auth: dict[str, str]) -> None:
-    assert client.delete(f"/api/v1/notes/{MISSING_ID}", headers=auth).status_code == 404
+    assert client.delete(f"/api/v1/notes/by-path/{MISSING_PATH}", headers=auth).status_code == 404
 
 
 def test_list_pagination_round_trip(client: TestClient, auth: dict[str, str]) -> None:
@@ -51,9 +59,9 @@ def test_list_pagination_round_trip(client: TestClient, auth: dict[str, str]) ->
     assert len(page1["items"]) == 2
     assert page1["next_cursor"] is not None
     page2 = client.get(f"/api/v1/notes?limit=2&cursor={page1['next_cursor']}", headers=auth).json()
-    ids1 = {i["id"] for i in page1["items"]}
-    ids2 = {i["id"] for i in page2["items"]}
-    assert ids1.isdisjoint(ids2)
+    paths1 = {i["path"] for i in page1["items"]}
+    paths2 = {i["path"] for i in page2["items"]}
+    assert paths1.isdisjoint(paths2)
 
 
 def test_bad_cursor_is_400(client: TestClient, auth: dict[str, str]) -> None:

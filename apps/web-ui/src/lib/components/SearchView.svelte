@@ -3,8 +3,11 @@
 
   import NoteListItem from "./NoteListItem.svelte";
 
-  let { q = "", tag = null, selectedId = null }: { q?: string; tag?: string | null; selectedId?: string | null } =
-    $props();
+  let {
+    q = "",
+    tag = null,
+    selectedPath = null,
+  }: { q?: string; tag?: string | null; selectedPath?: string | null } = $props();
 
   let query = $state("");
   let results = $state<SearchResult[]>([]);
@@ -66,8 +69,8 @@
   {/if}
 
   <div class="overflow-hidden rounded-stamp border border-ink-600 bg-ink-800">
-    {#each results as item (item.id)}
-      <NoteListItem {item} snippet={item.snippet} selected={item.id === selectedId} />
+    {#each results as item (item.path)}
+      <NoteListItem {item} snippet={item.snippet} selected={item.path === selectedPath} />
     {/each}
     {#if results.length === 0 && !loading && query.trim()}
       <p class="px-4 py-6 font-mono text-xs uppercase tracking-widest text-chalk-700">No matches.</p>

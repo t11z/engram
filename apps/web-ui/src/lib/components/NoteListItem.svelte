@@ -11,7 +11,7 @@
 
 <button
   type="button"
-  onclick={() => navTo({ note: item.id })}
+  onclick={() => navTo({ note: item.path })}
   class="block w-full border-b border-ink-600 px-4 py-3 text-left transition-colors duration-150 last:border-b-0"
   class:bg-amber-900={selected}
   class:bg-opacity-20={selected}

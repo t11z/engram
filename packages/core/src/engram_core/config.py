@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     index_path: Path | None = None
     trash_retention_days: int = 30
     log_level: str = "info"
+    # Path is the canonical handle; a ULID alias is optional and off by default,
+    # so engram never stamps an id into notes a user may share with other tools.
+    inject_id: bool = False
+    # Sub-directory (relative to the vault) for notes engram creates; empty = root.
+    new_note_dir: str = ""
 
     @property
     def resolved_index_path(self) -> Path:

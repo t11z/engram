@@ -36,7 +36,7 @@ class NoteMeta(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    id: str
+    id: str | None = None
     title: str
     created_at: datetime
     updated_at: datetime
@@ -97,7 +97,7 @@ class NoteCreate(BaseModel):
 class NoteSummary(BaseModel):
     """A lightweight projection for list and search results (no body)."""
 
-    id: str
+    id: str | None = None
     title: str
     tags: list[str] = Field(default_factory=list)
     updated_at: datetime
