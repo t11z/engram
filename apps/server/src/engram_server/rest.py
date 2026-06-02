@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, Query, Response
 
 from engram_core import (
+    AttachmentInfo,
     GraphView,
     LinkService,
     Note,
@@ -21,6 +22,7 @@ from engram_core import (
 from .errors import PreconditionRequired
 from .schemas import (
     AppendRequest,
+    DailyAppendRequest,
     LinkCreate,
     NoteListResponse,
     NoteUpdate,
@@ -128,6 +130,15 @@ async def patch_section(
     return note
 
 
+@router.post("/notes/daily/append", response_model=Note)
+async def append_daily(
+    data: DailyAppendRequest, service: ServiceDep, response: Response
+) -> Note:
+    note = service.append_to_daily_note(data.text)
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
+
+
 @router.get("/notes/{handle}", response_model=Note)
 async def get_note(handle: str, service: ServiceDep) -> Note:
     """Fetch a note by its id alias or a top-level path handle (use
@@ -191,3 +202,14 @@ async def folders(service: ServiceDep) -> list[str]:
 @router.get("/tags", response_model=list[TagCount])
 async def tags(service: ServiceDep) -> list[TagCount]:
     return service.list_tags()
+
+
+@router.get("/attachments", response_model=list[AttachmentInfo])
+async def attachments(service: ServiceDep) -> list[AttachmentInfo]:
+    return service.list_attachments()
+
+
+@router.get("/attachments/by-path/{path:path}")
+async def attachment_by_path(path: str, service: ServiceDep) -> Response:
+    data, content_type = service.read_attachment(path)
+    return Response(content=data, media_type=content_type)

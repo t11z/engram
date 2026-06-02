@@ -83,6 +83,38 @@ class VaultStore:
         st = abs_path.stat()
         return st.st_size, st.st_mtime
 
+    # --- attachments --------------------------------------------------------
+
+    def iter_attachments(self) -> Iterator[tuple[str, int]]:
+        """Yield (relative path, size) for every non-Markdown file in the vault,
+        skipping dotfolders (``.trash``, ``.engram``, editor config, …).
+        """
+        if not self.vault_path.exists():
+            return
+        for path in sorted(self.vault_path.rglob("*")):
+            if not path.is_file() or path.suffix.lower() == ".md":
+                continue
+            rel = path.relative_to(self.vault_path)
+            if any(part.startswith(".") for part in rel.parts):
+                continue
+            yield rel.as_posix(), path.stat().st_size
+
+    def read_attachment(self, rel_path: str) -> bytes:
+        """Read an attachment's bytes, refusing traversal, dotfolders, and notes."""
+        norm = rel_path.strip("/")
+        resolved = (self.vault_path / norm).resolve()
+        try:
+            rel = resolved.relative_to(self.vault_path.resolve())
+        except ValueError as exc:
+            raise NoteNotFound(rel_path) from exc
+        if (
+            any(part.startswith(".") for part in rel.parts)
+            or rel.suffix.lower() == ".md"
+            or not resolved.is_file()
+        ):
+            raise NoteNotFound(rel_path)
+        return resolved.read_bytes()
+
     @staticmethod
     def content_hash(abs_path: Path) -> str:
         """SHA-256 of the file's bytes — the version token for optimistic

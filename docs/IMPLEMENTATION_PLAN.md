@@ -6,8 +6,9 @@ them. Working conventions (how to branch, test, commit) live in `CLAUDE.md`, not
 here. Individual decisions with trade-offs are captured as ADRs under
 [`docs/adr/`](./adr/).
 
-Status: **pre-implementation**. No application code exists yet. The next session
-begins Phase 1 (core + storage).
+Status: **v1 shipped; v2 in progress.** The v1 milestones (Phases 0–5) are
+delivered. v2 reshapes how Engram reads and writes the vault around portable
+Markdown conventions (ADRs 0007–0011); see §8 "v2 — convention-based model".
 
 ---
 
@@ -30,6 +31,31 @@ Decisions of record (not up for revision in v1):
   Rationale in [ADR-0002](./adr/0002-mcp-rest-coexist.md).
 - **Storage.** Markdown files on disk with YAML frontmatter; the filesystem is
   the source of truth. A rebuildable SQLite FTS5 index accelerates search.
+- **Convention-based vault model** ([ADR-0007](./adr/0007-convention-based-vault-model.md)).
+  Engram reads the vault as portable Markdown conventions dictate rather than
+  imposing its own shape. The **vault-relative path is a note's canonical
+  handle**; the ULID `id` is an optional alias (off by default — Engram never
+  injects an id into a note that lacks one). Frontmatter is minimal/optional:
+  `title` derives from the first heading or the filename, and timestamps fall
+  back to the file mtime when absent; unknown frontmatter keys are preserved.
+  Notes can live in nested folders with free-form `<slug>.md` filenames.
+- **Link graph** ([ADR-0008](./adr/0008-wikilink-and-backlink-graph-model.md)).
+  `[[wikilinks]]`, `![[embeds]]`, inline `#tags`, and Markdown links are parsed;
+  the index stores a link/backlink graph and tags (the union of frontmatter and
+  inline tags).
+- **In-place editing + optimistic concurrency**
+  ([ADR-0009](./adr/0009-in-place-editing-and-optimistic-concurrency.md)). Notes
+  are editable; writes use a content-hash `ETag` with `If-Match` (REST requires
+  it). Reads return an `ETag` header.
+- **MCP resources & prompts**
+  ([ADR-0010](./adr/0010-mcp-resources-and-prompts.md)) accompany the tools.
+- **Vault co-presence; no built-in sync**
+  ([ADR-0011](./adr/0011-vault-co-presence-no-built-in-sync.md)). Engram does
+  not synchronise the vault across hosts. It assumes the vault directory is
+  co-present on its host (same machine, or replicated by a user-chosen tool such
+  as Syncthing/iCloud/Dropbox/git, or an always-on hub that also runs an editor's
+  own sync). A live filesystem watcher reconciles the index/graph during
+  operation, and sync conflict copies are tolerated.
 - **Auth.** A single bearer token (env var) shared by REST and MCP. An optional
   embedded OAuth 2.1 authorization server (opt-in via `ENGRAM_PUBLIC_URL`) lets
   claude.ai connect as a Custom Connector; `/mcp` then accepts either an OAuth
@@ -95,40 +121,51 @@ engram/
 
 ## 3. Data model
 
-A **Note** is a Markdown file with a YAML frontmatter header. The filesystem is
-canonical; everything else is derived.
+A **Note** is a Markdown file, at any depth in the vault. The filesystem is
+canonical; everything else is derived. The **vault-relative path is the note's
+canonical handle** (ADR-0007). Frontmatter is minimal and optional — Engram
+reads notes as it finds them and preserves anything it does not understand.
 
 ### Frontmatter fields
 
+All frontmatter is optional; Engram derives sensible values when a field is
+absent and never rewrites a note's frontmatter merely to add fields.
+
 | Field          | Type            | Required | Notes |
 |----------------|-----------------|----------|-------|
-| `id`           | string (ULID)   | yes      | Stable identity, assigned on create. Never changes. |
-| `title`        | string          | yes      | Human title. Drives the filename slug but is independent of it. |
-| `created_at`   | string (RFC 3339)| yes     | UTC timestamp. |
-| `updated_at`   | string (RFC 3339)| yes     | UTC timestamp, bumped on every write. |
-| `tags`         | list[string]    | no       | Free-form tags. Default `[]`. |
-| `source_url`   | string          | no       | Origin URL when clipped by the extension. |
+| `id`           | string (ULID)   | no       | **Optional stable alias.** Honoured for lookup when present; never force-injected. Engram-created notes may carry one (`ENGRAM_INJECT_ID`, default off) for clients that want a rename-stable handle. |
+| `title`        | string          | no       | Human title. Derived when absent: first H1 heading, else the filename. |
+| `created_at`   | string (RFC 3339)| no      | UTC timestamp. Falls back to the file's creation/mtime when absent. |
+| `updated_at`   | string (RFC 3339)| no      | UTC timestamp. Falls back to the file's mtime when absent. |
+| `tags`         | list[string]    | no       | Frontmatter tags; the effective tag set is the **union** of these and inline `#tags` from the body (ADR-0008). |
+| `source_url`   | string          | no       | Origin URL when imported from a link. |
 | `idempotency_key` | string       | no       | Client-supplied de-duplication key (see API). |
+| *(other keys)* | any             | no       | Unknown frontmatter keys are preserved verbatim on read and write. |
 
-The Markdown body follows the frontmatter. The body is never parsed for meaning
-in v1 — it is stored and returned verbatim.
+The Markdown body follows the frontmatter. The body **is** parsed for structure
+(ADR-0008): `[[wikilinks]]`, `![[embeds]]`, inline `#tags`, and Markdown links
+feed the link/backlink graph and tag index. The body content itself is stored
+and returned verbatim.
 
 ### Pydantic models (`packages/core`)
 
-- `NoteMeta` — the frontmatter fields above.
-- `Note` — `NoteMeta` + `body: str` + `path: str` (relative to the vault root).
-- `NoteCreate` — `title`, `body`, optional `tags`, `source_url`, `idempotency_key`.
-- `NoteSummary` — `id`, `title`, `tags`, `updated_at`, `path` (list/search results, no body).
+- `NoteMeta` — the frontmatter fields above (all optional).
+- `Note` — `NoteMeta` + `body: str` + `path: str` (canonical handle, relative to
+  the vault root).
+- `NoteCreate` — `body`, optional `title`, `tags`, `source_url`, `idempotency_key`.
+- `NoteSummary` — `path`, `title`, `tags`, `updated_at`, optional `id`
+  (list/search results, no body).
 - `SearchResult` — `NoteSummary` + `score: float` + `snippet: str`.
 
-### ID scheme — **ULID in frontmatter** (resolved)
+### Identity scheme — **path-primary, optional `id` alias** (resolved, ADR-0007)
 
-A ULID stored in `id` is the canonical identity. ULIDs are stable across renames
-and title edits, are lexicographically sortable by creation time, and avoid the
-collision and reflow problems of content hashes (a hash changes every edit) and
-of filename-as-identity (a filename changes when the title changes). The filename
-is a separate, human-friendly `YYYY-MM-DD-<slug>.md` for browsability; if a slug
-would collide, a short suffix is appended. Lookups resolve by `id`, not filename.
+The **vault-relative path is the canonical handle**: it is how the vault already
+addresses itself (wikilinks resolve by name/path), and it requires no rewrite of
+notes Engram did not create. A renamed/moved note gets a new path-handle. The
+ULID `id` survives as an **optional** rename-stable alias: honoured for lookup
+when present, never force-injected. Engram-created notes default to a
+`<slug>.md` filename (no forced date prefix) in a configurable new-note folder
+(`ENGRAM_NEW_NOTE_DIR`), and only carry an `id` when `ENGRAM_INJECT_ID` is on.
 
 ---
 
@@ -136,47 +173,58 @@ would collide, a short suffix is appended. Lookups resolve by `id`, not filename
 
 ### REST — `/api/v1`
 
-All endpoints require `Authorization: Bearer <token>`. Bodies are JSON unless noted.
+All endpoints require `Authorization: Bearer <token>` (except `/healthz`). Bodies
+are JSON unless noted. Notes are addressed by their **path** (the canonical
+handle); `{handle}` accepts an `id` or a top-level-path alias.
 
-| Method & path                 | Purpose | Request | Response |
-|-------------------------------|---------|---------|----------|
-| `POST /notes`                 | Create a note (idempotent). | `NoteCreate` | `201 Note` (or `200 Note` if `idempotency_key` already seen) |
-| `GET /notes`                  | List notes, newest first. | query: `limit`, `cursor`, `tag` | `200 {items: NoteSummary[], next_cursor?}` |
-| `GET /notes/{id}`             | Read a note in full. | — | `200 Note` / `404` |
-| `DELETE /notes/{id}`          | Soft-delete (move to `.trash/`). | — | `204` / `404` |
-| `POST /notes/{id}/restore`    | Restore from `.trash/`. | — | `200 Note` / `404` |
-| `GET /search`                 | Full-text search. | query: `q` (required), `limit`, `tag` | `200 {items: SearchResult[]}` |
-| `GET /trash`                  | List trashed notes. | query: `limit`, `cursor` | `200 {items: NoteSummary[], next_cursor?}` |
-| `GET /healthz`                | Liveness/readiness (no auth). | — | `200 {status, version}` |
+| Method & path                       | Purpose | Request | Response |
+|-------------------------------------|---------|---------|----------|
+| `POST /notes`                       | Create a note (idempotent). | `NoteCreate` | `201 Note` (or `200 Note` if `idempotency_key` already seen) |
+| `POST /links`                       | Import a URL as a note. | `{url, …}` | `201 Note` |
+| `GET /notes`                        | List notes, newest first. | query: `limit`, `cursor`, `tag` | `200 {items: NoteSummary[], next_cursor?}` |
+| `GET /notes/by-path/{path}`         | Read a note in full. Returns an `ETag` header. | — | `200 Note` / `404` |
+| `PUT /notes/by-path/{path}`         | Update a note in place. **`If-Match` required.** | body + `If-Match: <etag>` | `200 Note` / `428` (no `If-Match`) / `409` (stale) |
+| `DELETE /notes/by-path/{path}`      | Soft-delete (move to `.trash/`). | — | `204` / `404` |
+| `GET /notes/by-title?title=`        | Read a note by exact title. | query: `title` | `200 Note` / `404` |
+| `GET /notes/{handle}`               | Read by `id` or top-level-path alias. | — | `200 Note` / `404` |
+| `DELETE /notes/{handle}`            | Soft-delete by alias. | — | `204` / `404` |
+| `POST /notes/restore`               | Restore from `.trash/`. | `{path}` | `200 Note` / `404` |
+| `POST /notes/append`                | Append text to a note. | `{path, text}` | `200 Note` |
+| `POST /notes/patch-section`         | Replace a heading's section. | `{path, heading, content}` | `200 Note` |
+| `POST /notes/daily/append`          | Append to today's daily note. | `{text}` | `200 Note` |
+| `GET /search`                       | Full-text search. | query: `q`, `tag`, `limit` | `200 {items: SearchResult[]}` |
+| `GET /trash`                        | List trashed notes. | query: `limit`, `cursor` | `200 {items: NoteSummary[], next_cursor?}` |
+| `GET /backlinks?path=`              | Notes linking to this note. | query: `path` | `200 {items: NoteSummary[]}` |
+| `GET /related?path=`                | Notes related via the graph. | query: `path` | `200 {items: NoteSummary[]}` |
+| `GET /links?path=`                  | Outbound links from this note. | query: `path` | `200 {items: …}` |
+| `GET /graph?path=&depth=`           | Neighbourhood graph to a depth. | query: `path`, `depth` | `200 {nodes, edges}` |
+| `GET /folders`                      | List vault folders. | — | `200 {items: …}` |
+| `GET /tags`                         | List tags (frontmatter ∪ inline). | — | `200 {items: …}` |
+| `GET /attachments`                  | List attachments. | — | `200 {items: …}` |
+| `GET /attachments/by-path/{path}`   | Serve the attachment bytes. | — | `200 <bytes>` / `404` |
+| `GET /healthz`                      | Liveness/readiness (no auth). | — | `200 {status, version}` |
 
 Errors use a consistent shape: `{ "error": { "code": string, "message": string } }`.
-Pagination is opaque-cursor based. The OpenAPI schema generated from these routes
+Pagination is opaque-cursor based. Writes use a content-hash `ETag` for
+optimistic concurrency (ADR-0009). The OpenAPI schema generated from these routes
 is the contract of record (`packages/contract`).
 
-### MCP tools — `/mcp`
+### MCP — `/mcp`
 
-Exposed via `mcp.server.fastmcp`. Tool descriptions are written for LLM
-consumption: concise, action-oriented, with an example. The five tools map onto
-the same service layer as REST.
+Exposed via `mcp.server.fastmcp`. Tools, resources, and prompts map onto the same
+service layer as REST. Tool descriptions are written for LLM consumption:
+concise, action-oriented, with an example. **Tools and resources address notes
+by path, not id** (ADR-0007, ADR-0010).
 
-- **`save_note`** — "Save a new note to the vault. Use this to remember
-  something for later: a fact, a snippet, a link, a decision. Provide a short
-  `title` and the `body` as Markdown; add `tags` to make it findable. Returns the
-  note's `id`. Example: `save_note(title='Postgres backup cmd', body='`pg_dump …`',
-  tags=['ops','postgres'])`."
-- **`search_notes`** — "Search the vault by keyword and return the best matches
-  with a snippet and id. Use this before answering from memory, to ground your
-  answer in what the user actually saved. Example: `search_notes(query='postgres
-  backup')`."
-- **`read_note`** — "Read one note in full by its `id` (get the id from
-  `search_notes` or `list_notes`). Returns the title, tags, and full Markdown
-  body. Example: `read_note(id='01J…')`."
-- **`list_notes`** — "List recent notes (newest first) as id + title + tags,
-  optionally filtered by `tag`. Use this to browse what exists when you don't
-  have a search term. Example: `list_notes(tag='ops', limit=20)`."
-- **`delete_note`** — "Move a note to the trash by `id` (soft-delete; it can be
-  restored for 30 days). Confirm with the user before deleting. Example:
-  `delete_note(id='01J…')`."
+**Tools:** `save_note`, `search_notes`, `read_note` (by path), `list_notes`,
+`delete_note` (by path), `get_backlinks`, `get_links`, `get_related`,
+`get_graph`, `list_folders`, `list_tags`, `get_note_by_title`, `update_note`,
+`append_to_note`, `patch_section`, `list_attachments`, `read_attachment`,
+`append_to_daily_note`.
+
+**Resources:** `engram://note/{path}`, `engram://notes`.
+
+**Prompts:** `summarize_note`, `find_related`, `daily_review`.
 
 ---
 
@@ -205,8 +253,23 @@ the same service layer as REST.
    the index and re-index anything stale or missing, and drop index rows whose
    file is gone. This heals edits made to the vault while the server was down
    (e.g. a `git pull` or manual edit).
-3. **Manual reindex.** A `engram reindex` CLI path (and an internal service
+3. **Live reconciliation (v2, ADR-0011).** A filesystem watcher reconciles the
+   index/graph **during operation**, not only at startup, so externally
+   replicated or hand-edited changes are reflected promptly. It is debounced
+   (`ENGRAM_WATCH_DEBOUNCE_SECONDS`) and can be disabled (`ENGRAM_WATCH`).
+4. **Manual reindex.** A `engram reindex` CLI path (and an internal service
    call) rebuilds from scratch for recovery.
+
+**Version token & concurrency (v2, ADR-0009).** Each note carries a
+**content-hash `ETag`** computed from its bytes. Reads return it as an `ETag`
+header; in-place writes require `If-Match` and reject stale tokens, so an Engram
+write and an inbound replicated change cannot silently overwrite each other.
+
+**Conflict-file tolerance (v2, ADR-0011).** Files created by sync tools (e.g.
+`… (conflicted copy).md`, `.sync-conflict-…`) are indexed harmlessly rather than
+crashing or corrupting state. Engram never resolves a sync conflict — it stays
+consistent and surfaces the conflict (a `409` on a stale write, and by listing
+the conflict files); resolution is the sync tool's or the user's job.
 
 The storage layer lives in `packages/core` behind a `VaultStore` interface so the
 index is an implementation detail the service layer owns, not something REST/MCP
@@ -314,6 +377,29 @@ PR completes one, **tick its box in this file in the same PR** (see `CLAUDE.md`)
 - [x] Store-submission kit (`apps/extension/store/`), privacy policy, and opt-in `wxt submit` publishing in `release.yml`.
 - [x] Docs site filled out (install, configuration, MCP + API reference).
 - [x] First tagged release `v0.1.0`; CHANGELOG cut. *(CHANGELOG cut; tag is the maintainer's step)*
+
+### v2 — convention-based model (in progress)
+
+Repositions Engram as an editor-agnostic lens onto a vault the user curates with
+any Markdown editor (ADRs 0007–0011). The v1 history above stands; v2 changes how
+Engram reads and writes that vault. Delivered in five phases (issues #60–#64):
+
+- [x] **Phase A — Convention-based vault & identity** (#60, ADR-0007): path as
+  canonical handle; optional `id` alias; minimal/optional frontmatter with
+  derivation; preserve unknown keys; nested folders + free-form `<slug>.md`.
+- [x] **Phase B — Wikilink & backlink graph** (#61, ADR-0008): parse
+  `[[wikilinks]]`, `![[embeds]]`, inline `#tags`, Markdown links; store the link
+  graph and the union tag index; `backlinks`/`related`/`links`/`graph`/`tags`/
+  `folders` surfaces.
+- [x] **Phase C — In-place editing & optimistic concurrency** (#62, ADR-0009):
+  content-hash `ETag`; `update`/`append`/`patch-section`/daily-note append; REST
+  `If-Match` (428/409).
+- [x] **Phase D — MCP resources & prompts** (#63, ADR-0010): `engram://note/{path}`
+  and `engram://notes` resources; `summarize_note`/`find_related`/`daily_review`
+  prompts; the expanded v2 tool set.
+- [x] **Phase E — Vault co-presence** (#64, ADR-0011): live filesystem watcher
+  (incremental reconciliation), conflict-file tolerance; deployment topologies
+  documented (no built-in sync).
 
 ---
 

@@ -20,6 +20,44 @@
         "title": "AppendRequest",
         "type": "object"
       },
+      "AttachmentInfo": {
+        "description": "A non-Markdown file in the vault (an image, PDF, etc.).",
+        "properties": {
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path",
+          "size",
+          "content_type"
+        ],
+        "title": "AttachmentInfo",
+        "type": "object"
+      },
+      "DailyAppendRequest": {
+        "description": "Body for ``POST /api/v1/notes/daily/append``.",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "DailyAppendRequest",
+        "type": "object"
+      },
       "GraphEdge": {
         "description": "A directed link edge between two note paths.",
         "properties": {
@@ -628,6 +666,65 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/attachments": {
+      "get": {
+        "operationId": "attachments_api_v1_attachments_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AttachmentInfo"
+                  },
+                  "title": "Response Attachments Api V1 Attachments Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Attachments"
+      }
+    },
+    "/api/v1/attachments/by-path/{path}": {
+      "get": {
+        "operationId": "attachment_by_path_api_v1_attachments_by_path__path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attachment By Path"
+      }
+    },
     "/api/v1/backlinks": {
       "get": {
         "operationId": "backlinks_api_v1_backlinks_get",
@@ -1156,6 +1253,44 @@
           }
         },
         "summary": "Get Note By Title"
+      }
+    },
+    "/api/v1/notes/daily/append": {
+      "post": {
+        "operationId": "append_daily_api_v1_notes_daily_append_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DailyAppendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Append Daily"
       }
     },
     "/api/v1/notes/patch-section": {

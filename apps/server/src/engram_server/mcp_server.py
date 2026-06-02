@@ -8,6 +8,7 @@ docstrings are written for LLM consumption (they become the tool descriptions).
 
 from __future__ import annotations
 
+import base64
 import json
 
 from mcp.server.fastmcp import FastMCP
@@ -164,6 +165,29 @@ def patch_section(path: str, heading: str, content: str) -> dict[str, object]:
     return {"path": note.path}
 
 
+def list_attachments() -> list[dict[str, object]]:
+    """List non-Markdown files in the vault (images, PDFs, …) with size and type.
+    Use this to find a note's attachments. Example: list_attachments()."""
+    return [
+        {"path": a.path, "size": a.size, "content_type": a.content_type}
+        for a in get_service().list_attachments()
+    ]
+
+
+def read_attachment(path: str) -> dict[str, object]:
+    """Read an attachment's bytes by `path`, returned base64-encoded along with its
+    content type. Example: read_attachment(path='attachments/diagram.png')."""
+    data, content_type = get_service().read_attachment(path)
+    return {"path": path, "content_type": content_type, "base64": base64.b64encode(data).decode()}
+
+
+def append_to_daily_note(text: str) -> dict[str, object]:
+    """Append a Markdown block to today's daily note (created if needed). Use this
+    to jot something dated. Example: append_to_daily_note(text='- shipped the release')."""
+    note = get_service().append_to_daily_note(text)
+    return {"path": note.path}
+
+
 def note_resource(path: str) -> str:
     """MCP resource: the full Markdown body of the note at `path`."""
     return get_service().get(path).body
@@ -229,6 +253,9 @@ def build_mcp() -> FastMCP:
         update_note,
         append_to_note,
         patch_section,
+        list_attachments,
+        read_attachment,
+        append_to_daily_note,
     ):
         mcp.tool()(tool)
     mcp.resource("engram://note/{path}")(note_resource)

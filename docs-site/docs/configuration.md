@@ -11,6 +11,12 @@ Engram is configured entirely through environment variables (see
 | `ENGRAM_PORT` | `8080` | Bind port. |
 | `ENGRAM_TRASH_RETENTION_DAYS` | `30` | Days a soft-deleted note stays in `.trash/` before being purged. |
 | `ENGRAM_INDEX_PATH` | `<vault>/.engram/index.db` | SQLite FTS5 search-index location. The index is a rebuildable cache, not your data. |
+| `ENGRAM_INJECT_ID` | `false` | Stamp a ULID `id` into notes Engram creates (gives clients a rename-stable handle). Off by default; Engram never injects an id into notes that lack one. |
+| `ENGRAM_NEW_NOTE_DIR` | *(empty = vault root)* | Sub-folder where Engram places notes it creates. |
+| `ENGRAM_ATTACHMENT_DIR` | *(empty)* | Folder treated as the attachment store (served via the attachments endpoints). |
+| `ENGRAM_DAILY_NOTE_DIR` | *(empty)* | Folder for daily notes (used by the daily-note append surfaces). |
+| `ENGRAM_WATCH` | `true` | Live-reconcile the vault with a filesystem watcher while running, so external/replicated changes appear promptly. |
+| `ENGRAM_WATCH_DEBOUNCE_SECONDS` | `0.5` | Debounce window for the watcher before reconciling a burst of filesystem changes. |
 | `ENGRAM_CORS_ORIGINS` | *(empty)* | Comma-separated allowed origins for the extension and web UI. Example: `chrome-extension://<id>,https://engram.example.com`. |
 | `ENGRAM_PUBLIC_URL` | *(empty)* | Public HTTPS origin where the server is reachable (no trailing path). Setting it enables the embedded OAuth server and becomes the token issuer / resource identifier. Required to connect from claude.ai. |
 | `ENGRAM_OAUTH_PASSWORD` | *(empty)* | Password for the OAuth login/consent page. Required whenever `ENGRAM_PUBLIC_URL` is set; the server refuses to start otherwise. |
@@ -18,11 +24,17 @@ Engram is configured entirely through environment variables (see
 
 ## Notes on the vault
 
-- The vault is just Markdown files with YAML frontmatter. Back it up like any
-  directory; edit it with any editor when the server is stopped.
+- The vault is just Markdown files (at any depth) with optional YAML
+  frontmatter. Back it up like any directory; edit it with any Markdown editor —
+  even while the server runs, since the watcher reconciles live changes.
+- A note's **path is its canonical handle**. Frontmatter is optional: `title`
+  derives from the first heading or the filename, timestamps fall back to the
+  file mtime, and unknown keys are preserved untouched.
 - `.trash/` holds soft-deleted notes until the retention purge.
 - `.engram/` holds the search index. Deleting it is safe — it rebuilds from
   your files on the next start.
+- Engram does not synchronise the vault across machines; the directory must be
+  co-present on Engram's host. See [Deployment topologies](deployment.md).
 
 ## Notes on the token
 

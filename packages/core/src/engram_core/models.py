@@ -157,3 +157,11 @@ class TagCount(BaseModel):
 
     tag: str
     count: int
+
+
+class AttachmentInfo(BaseModel):
+    """A non-Markdown file in the vault (an image, PDF, etc.)."""
+
+    path: str
+    size: int
+    content_type: str

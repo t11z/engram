@@ -4,7 +4,7 @@
 
 # Engram
 
-*"I would prefer not to" — but it will, in fact, keep your notes.*
+*The trace your memory leaves — in plain Markdown you own, readable by any model.*
 
 Engram is a self-hosted personal knowledge vault that any LLM can read and
 write through the [Model Context Protocol](https://modelcontextprotocol.io). Your

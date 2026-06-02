@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Attachments */
+        get: operations["attachments_api_v1_attachments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/by-path/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Attachment By Path */
+        get: operations["attachment_by_path_api_v1_attachments_by_path__path__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backlinks": {
         parameters: {
             query?: never;
@@ -138,6 +172,23 @@ export interface paths {
         get: operations["get_note_by_title_api_v1_notes_by_title_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/daily/append": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append Daily */
+        post: operations["append_daily_api_v1_notes_daily_append_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -296,6 +347,26 @@ export interface components {
         AppendRequest: {
             /** Path */
             path: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * AttachmentInfo
+         * @description A non-Markdown file in the vault (an image, PDF, etc.).
+         */
+        AttachmentInfo: {
+            /** Content Type */
+            content_type: string;
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
+        /**
+         * DailyAppendRequest
+         * @description Body for ``POST /api/v1/notes/daily/append``.
+         */
+        DailyAppendRequest: {
             /** Text */
             text: string;
         };
@@ -535,6 +606,57 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    attachments_api_v1_attachments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentInfo"][];
+                };
+            };
+        };
+    };
+    attachment_by_path_api_v1_attachments_by_path__path__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     backlinks_api_v1_backlinks_get: {
         parameters: {
             query: {
@@ -906,6 +1028,39 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    append_daily_api_v1_notes_daily_append_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DailyAppendRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
