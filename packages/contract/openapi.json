@@ -79,7 +79,7 @@
         "type": "object"
       },
       "Note": {
-        "additionalProperties": false,
+        "additionalProperties": true,
         "description": "A full note: frontmatter plus the Markdown body and its vault-relative path.",
         "properties": {
           "body": {

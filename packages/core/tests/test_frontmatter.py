@@ -98,7 +98,7 @@ def test_malformed_yaml_raises() -> None:
         parse_note("---\nid: [unclosed\n---\nbody\n", "bad.md")
 
 
-def test_unknown_field_raises() -> None:
+def test_unknown_fields_preserved_and_round_trip() -> None:
     text = (
         "---\n"
         "id: 01KSB998H8WTTDZCMR8C67KBR7\n"
@@ -106,10 +106,17 @@ def test_unknown_field_raises() -> None:
         "created_at: '2026-01-10T08:30:00Z'\n"
         "updated_at: '2026-01-10T08:30:00Z'\n"
         "author: nope\n"
+        "aliases:\n"
+        "  - alt\n"
         "---\n\nbody\n"
     )
-    with pytest.raises(InvalidNote):
-        parse_note(text, "bad.md")
+    note = parse_note(text, "extra.md")
+    assert note.model_extra == {"author": "nope", "aliases": ["alt"]}
+    once = dump_note(note)
+    # Unknown keys survive, sit after the known fields, and round-trip idempotently.
+    assert "author: nope" in once
+    assert once.index("author") > once.index("tags:")
+    assert dump_note(parse_note(once, "extra.md")) == once
 
 
 def test_missing_required_field_raises() -> None:

@@ -47,15 +47,15 @@ def test_notemeta_defaults_tags_empty() -> None:
     assert meta.idempotency_key is None
 
 
-def test_notemeta_rejects_unknown_field() -> None:
-    with pytest.raises(ValidationError):
-        NoteMeta(
-            id="01J0000000000000000000000A",
-            title="Hi",
-            created_at=_dt("2026-01-10T08:30:00Z"),
-            updated_at=_dt("2026-01-10T08:30:00Z"),
-            author="someone",  # type: ignore[call-arg]
-        )
+def test_notemeta_preserves_unknown_field() -> None:
+    meta = NoteMeta(
+        id="01J0000000000000000000000A",
+        title="Hi",
+        created_at=_dt("2026-01-10T08:30:00Z"),
+        updated_at=_dt("2026-01-10T08:30:00Z"),
+        author="someone",
+    )
+    assert meta.model_extra == {"author": "someone"}
 
 
 def test_notemeta_rejects_naive_datetime() -> None:

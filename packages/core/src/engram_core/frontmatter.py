@@ -55,6 +55,10 @@ def dump_note(note: Note) -> str:
         header["source_url"] = note.source_url
     if note.idempotency_key is not None:
         header["idempotency_key"] = note.idempotency_key
+    # Unknown keys (e.g. properties added by another editor) are preserved after
+    # the known fields, in their original order, so a shared vault round-trips.
+    for key, value in (note.model_extra or {}).items():
+        header[key] = value
 
     yaml_header = yaml.safe_dump(
         header,
