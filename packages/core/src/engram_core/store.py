@@ -9,6 +9,7 @@ assumption).
 
 from __future__ import annotations
 
+import hashlib
 import os
 import threading
 from collections.abc import Iterator
@@ -81,6 +82,14 @@ class VaultStore:
     def stat(abs_path: Path) -> tuple[int, float]:
         st = abs_path.stat()
         return st.st_size, st.st_mtime
+
+    @staticmethod
+    def content_hash(abs_path: Path) -> str:
+        """SHA-256 of the file's bytes — the version token for optimistic
+        concurrency (ADR-0009). Reflects the exact on-disk content, not engram's
+        canonical serialization.
+        """
+        return hashlib.sha256(abs_path.read_bytes()).hexdigest()
 
     # --- trash --------------------------------------------------------------
 
