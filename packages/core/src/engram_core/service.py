@@ -7,17 +7,29 @@ point, index follows) and idempotency. No web framework is imported here.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 
 from .config import Settings
-from .errors import NoteNotFound
+from .editing import append_body, replace_section
+from .errors import NoteConflict, NoteNotFound
 from .frontmatter import read_note_file
 from .ids import new_ulid
 from .index import SearchIndex
 from .link_extractor import LinkFetchSettings, fetch_and_extract
-from .models import Note, NoteCreate, NoteSummary, OutgoingLink, SearchResult
+from .models import (
+    GraphEdge,
+    GraphNode,
+    GraphView,
+    Note,
+    NoteCreate,
+    NoteSummary,
+    OutgoingLink,
+    SearchResult,
+    TagCount,
+)
 from .store import VaultStore
 
 
@@ -101,6 +113,80 @@ class NoteService:
         self.index.resolve_links()
         return note
 
+    # --- in-place editing (ADR-0009) ----------------------------------------
+
+    def _edit(
+        self,
+        handle: str,
+        mutate: Callable[[Note], Note],
+        *,
+        expected_etag: str | None,
+        now: datetime | None,
+    ) -> Note:
+        """Read a live note, optionally enforce an `If-Match` precondition, apply
+        ``mutate`` to it, write it back in place, and re-index. Raises
+        ``NoteConflict`` if the note changed since ``expected_etag`` was read.
+        """
+        note = self.get(handle)
+        if expected_etag is not None and self.index.etag_for(note.path) != expected_etag:
+            raise NoteConflict(handle)
+        ts = now or datetime.now(UTC)
+        edited = mutate(note).model_copy(update={"updated_at": ts})
+        stored = self.store.write(edited)
+        abs_path = self.settings.vault_path / stored.path
+        size, mtime = self.store.stat(abs_path)
+        self.index.upsert(stored, size=size, mtime=mtime, etag=self.store.content_hash(abs_path))
+        self.index.resolve_links()
+        return stored
+
+    def update_note(
+        self,
+        handle: str,
+        *,
+        title: str | None = None,
+        body: str | None = None,
+        tags: list[str] | None = None,
+        expected_etag: str | None = None,
+        now: datetime | None = None,
+    ) -> Note:
+        """Replace a note's title/body/tags (whichever are given). Precondition-
+        guarded when ``expected_etag`` is supplied.
+        """
+
+        def mutate(note: Note) -> Note:
+            updates: dict[str, object] = {}
+            if title is not None:
+                updates["title"] = title
+            if body is not None:
+                updates["body"] = body
+            if tags is not None:
+                updates["tags"] = list(tags)
+            return note.model_copy(update=updates)
+
+        return self._edit(handle, mutate, expected_etag=expected_etag, now=now)
+
+    def append_to_note(self, handle: str, text: str, *, now: datetime | None = None) -> Note:
+        """Append a Markdown block to a note's body (retry-safe; no precondition)."""
+        return self._edit(
+            handle,
+            lambda note: note.model_copy(update={"body": append_body(note.body, text)}),
+            expected_etag=None,
+            now=now,
+        )
+
+    def patch_section(
+        self, handle: str, heading: str, content: str, *, now: datetime | None = None
+    ) -> Note:
+        """Replace the section under ``heading`` (created if absent); retry-safe."""
+        return self._edit(
+            handle,
+            lambda note: note.model_copy(
+                update={"body": replace_section(note.body, heading, content)}
+            ),
+            expected_etag=None,
+            now=now,
+        )
+
     def purge_expired_trash(self, *, now: datetime | None = None) -> list[str]:
         ts = now or datetime.now(UTC)
         purged = self.store.purge_expired(self.settings.trash_retention_days, ts)
@@ -154,6 +240,81 @@ class NoteService:
         """Outgoing references from ``handle`` (path or id), resolved or dangling."""
         note = self.get(handle)
         return self.index.outgoing_links(note.path)
+
+    def get_related(self, handle: str) -> list[NoteSummary]:
+        """Notes one hop away: backlinks plus resolved outgoing targets, deduped."""
+        note = self.get(handle)
+        seen: set[str] = {note.path}
+        related: list[NoteSummary] = []
+        for summary in self.index.backlinks(note.path):
+            if summary.path not in seen:
+                seen.add(summary.path)
+                related.append(summary)
+        for link in self.index.outgoing_links(note.path):
+            target = link.resolved_path
+            if target is not None and target not in seen:
+                target_summary = self.index.get_summary(target)
+                if target_summary is not None:
+                    seen.add(target)
+                    related.append(target_summary)
+        return related
+
+    def get_graph(self, handle: str, *, depth: int = 1) -> GraphView:
+        """A scoped link neighbourhood around a note, BFS-expanded to ``depth``."""
+        note = self.get(handle)
+        focus = note.path
+        nodes: dict[str, GraphNode] = {}
+        edges: list[GraphEdge] = []
+        edge_seen: set[tuple[str, str, str]] = set()
+
+        def add_node(path: str) -> bool:
+            if path in nodes:
+                return False
+            summary = self.index.get_summary(path)
+            title = summary.title if summary is not None else path
+            node_id = summary.id if summary is not None else None
+            nodes[path] = GraphNode(path=path, title=title, id=node_id)
+            return True
+
+        def add_edge(source: str, target: str, link_type: str) -> None:
+            key = (source, target, link_type)
+            if key not in edge_seen:
+                edge_seen.add(key)
+                edges.append(GraphEdge(source=source, target=target, type=link_type))
+
+        add_node(focus)
+        frontier = [focus]
+        for _ in range(max(0, depth)):
+            nxt: list[str] = []
+            for path in frontier:
+                for link in self.index.outgoing_links(path):
+                    if link.resolved_path is not None:
+                        is_new = add_node(link.resolved_path)
+                        add_edge(path, link.resolved_path, link.type)
+                        if is_new:
+                            nxt.append(link.resolved_path)
+                for source, link_type in self.index.backlink_edges(path):
+                    is_new = add_node(source)
+                    add_edge(source, path, link_type)
+                    if is_new:
+                        nxt.append(source)
+            frontier = nxt
+        return GraphView(focus=focus, nodes=list(nodes.values()), edges=edges)
+
+    def get_by_title(self, title: str) -> Note:
+        """Read the most recently updated live note with this exact title."""
+        path = self.index.find_by_title(title)
+        if path is None:
+            raise NoteNotFound(title)
+        return self.get(path)
+
+    def list_folders(self) -> list[str]:
+        """Folders (and ancestors) containing live notes."""
+        return self.index.list_folders()
+
+    def list_tags(self) -> list[TagCount]:
+        """All tags on live notes (frontmatter and inline) with counts."""
+        return self.index.list_tags()
 
     # --- maintenance --------------------------------------------------------
 

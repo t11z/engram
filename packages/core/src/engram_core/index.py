@@ -18,7 +18,15 @@ from pathlib import Path
 
 from .errors import IndexUnavailable
 from .links import LinkResolver, extract_inline_tags, extract_links
-from .models import Note, NoteSummary, OutgoingLink, SearchResult, from_rfc3339, to_rfc3339
+from .models import (
+    Note,
+    NoteSummary,
+    OutgoingLink,
+    SearchResult,
+    TagCount,
+    from_rfc3339,
+    to_rfc3339,
+)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS notes (
@@ -50,6 +58,13 @@ CREATE TABLE IF NOT EXISTS links (
 );
 CREATE INDEX IF NOT EXISTS idx_links_src ON links(src_noteid);
 CREATE INDEX IF NOT EXISTS idx_links_dst ON links(dst_noteid);
+
+CREATE TABLE IF NOT EXISTS note_tags (
+    noteid INTEGER NOT NULL,
+    tag    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_note_tags_tag ON note_tags(tag);
+CREATE INDEX IF NOT EXISTS idx_note_tags_noteid ON note_tags(noteid);
 """
 
 _FTS = (
@@ -191,6 +206,12 @@ class SearchIndex:
                         "VALUES(?,?,?,?)",
                         rows,
                     )
+            self.conn.execute("DELETE FROM note_tags WHERE noteid = ?", (noteid,))
+            if deleted_at is None and all_tags:
+                self.conn.executemany(
+                    "INSERT INTO note_tags(noteid, tag) VALUES(?,?)",
+                    [(noteid, tag) for tag in all_tags],
+                )
             return noteid
 
     def move_row(
@@ -212,6 +233,7 @@ class SearchIndex:
             self.conn.execute("DELETE FROM notes WHERE noteid = ?", (noteid,))
             self.conn.execute("DELETE FROM links WHERE src_noteid = ?", (noteid,))
             self.conn.execute("UPDATE links SET dst_noteid = NULL WHERE dst_noteid = ?", (noteid,))
+            self.conn.execute("DELETE FROM note_tags WHERE noteid = ?", (noteid,))
 
     def remove_path(self, path: str) -> None:
         row = self.conn.execute("SELECT noteid FROM notes WHERE path = ?", (path,)).fetchone()
@@ -223,6 +245,7 @@ class SearchIndex:
             self.conn.execute("DELETE FROM notes_fts")
             self.conn.execute("DELETE FROM notes")
             self.conn.execute("DELETE FROM links")
+            self.conn.execute("DELETE FROM note_tags")
 
     def resolve_links(self) -> None:
         """Recompute ``dst_noteid`` for every link against the current live notes."""
@@ -311,6 +334,54 @@ class SearchIndex:
             )
             for r in self.conn.execute(sql, (noteid,)).fetchall()
         ]
+
+    def get_summary(self, path: str) -> NoteSummary | None:
+        """Summary for a live note by path (for graph/related projections)."""
+        row = self.conn.execute(
+            "SELECT id, title, tags_json, updated_at, path FROM notes "
+            "WHERE path = ? AND deleted_at IS NULL",
+            (path,),
+        ).fetchone()
+        return None if row is None else _summary(row)
+
+    def find_by_title(self, title: str) -> str | None:
+        """Path of the most recently updated live note with this exact title."""
+        row = self.conn.execute(
+            "SELECT path FROM notes WHERE title = ? AND deleted_at IS NULL "
+            "ORDER BY updated_at DESC, noteid DESC LIMIT 1",
+            (title,),
+        ).fetchone()
+        return None if row is None else str(row[0])
+
+    def backlink_edges(self, handle: str) -> list[tuple[str, str]]:
+        """(source path, link type) for live notes linking to ``handle``."""
+        noteid = self._resolve_noteid(handle, live_only=True)
+        if noteid is None:
+            return []
+        sql = (
+            "SELECT n.path, l.link_type FROM links l JOIN notes n ON n.noteid = l.src_noteid "
+            "WHERE l.dst_noteid = ? AND n.deleted_at IS NULL"
+        )
+        return [(str(r[0]), str(r[1])) for r in self.conn.execute(sql, (noteid,)).fetchall()]
+
+    def list_folders(self) -> list[str]:
+        """Distinct folders (and their ancestors) containing live notes, sorted."""
+        folders: set[str] = set()
+        for row in self.conn.execute(
+            "SELECT path FROM notes WHERE deleted_at IS NULL"
+        ).fetchall():
+            parts = str(row[0]).split("/")[:-1]
+            for i in range(1, len(parts) + 1):
+                folders.add("/".join(parts[:i]))
+        return sorted(folders)
+
+    def list_tags(self) -> list[TagCount]:
+        """All tags on live notes (frontmatter and inline) with counts, by frequency."""
+        rows = self.conn.execute(
+            "SELECT nt.tag, COUNT(*) FROM note_tags nt JOIN notes n ON n.noteid = nt.noteid "
+            "WHERE n.deleted_at IS NULL GROUP BY nt.tag ORDER BY COUNT(*) DESC, nt.tag"
+        ).fetchall()
+        return [TagCount(tag=str(r[0]), count=int(r[1])) for r in rows]
 
     def all_rows(self) -> Iterator[tuple[int, str | None, str, int, float, str | None]]:
         for row in self.conn.execute(

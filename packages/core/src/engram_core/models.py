@@ -126,3 +126,34 @@ class OutgoingLink(BaseModel):
     type: str
     resolved_path: str | None = None
     resolved_id: str | None = None
+
+
+class GraphNode(BaseModel):
+    """A node in a scoped link graph (a note)."""
+
+    path: str
+    title: str
+    id: str | None = None
+
+
+class GraphEdge(BaseModel):
+    """A directed link edge between two note paths."""
+
+    source: str
+    target: str
+    type: str
+
+
+class GraphView(BaseModel):
+    """A scoped neighbourhood of the link graph around a focus note."""
+
+    focus: str
+    nodes: list[GraphNode] = Field(default_factory=list)
+    edges: list[GraphEdge] = Field(default_factory=list)
+
+
+class TagCount(BaseModel):
+    """A tag and how many live notes carry it (frontmatter or inline)."""
+
+    tag: str
+    count: int

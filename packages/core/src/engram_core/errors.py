@@ -26,6 +26,16 @@ class NoteNotInTrash(EngramError):
         super().__init__(f"No trashed note with id {note_id!r}.")
 
 
+class NoteConflict(EngramError):
+    """A write's `If-Match` precondition did not match the note's current content
+    (it changed since the caller last read it). Surfaced as 409 by the web layer.
+    """
+
+    def __init__(self, handle: str) -> None:
+        self.handle = handle
+        super().__init__(f"Note {handle!r} changed since it was read.")
+
+
 class NoteAlreadyExists(EngramError):
     """A note with the given id already exists (ULID collision; effectively never)."""
 
