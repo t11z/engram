@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .errors import IndexUnavailable
-from .links import LinkResolver, extract_links
+from .links import LinkResolver, extract_inline_tags, extract_links
 from .models import Note, NoteSummary, OutgoingLink, SearchResult, from_rfc3339, to_rfc3339
 
 _SCHEMA = """
@@ -62,6 +62,17 @@ _BODY_COL = 1  # index of 'body' among the FTS columns (title, body, tags)
 
 def _tags_text(tags: list[str]) -> str:
     return f" {' '.join(tags)} " if tags else ""
+
+
+def _merge_tags(frontmatter: list[str], inline: list[str]) -> list[str]:
+    """Union of frontmatter and inline tags, frontmatter first, de-duplicated."""
+    merged = list(frontmatter)
+    seen = set(frontmatter)
+    for tag in inline:
+        if tag not in seen:
+            seen.add(tag)
+            merged.append(tag)
+    return merged
 
 
 def _build_match(query: str) -> str | None:
@@ -129,7 +140,11 @@ class SearchIndex:
         surrogate ``noteid``.
         """
         deleted = to_rfc3339(deleted_at) if deleted_at is not None else None
-        fts_tags = " ".join(note.tags)
+        # Filtering and the FTS tags column cover the union of frontmatter and
+        # inline #tags; the displayed tags (tags_json) stay frontmatter-only so
+        # the on-disk model round-trips faithfully.
+        all_tags = _merge_tags(note.tags, extract_inline_tags(note.body))
+        fts_tags = " ".join(all_tags)
         with self.conn:
             noteid = self._match_noteid(note)
             values = (
@@ -137,7 +152,7 @@ class SearchIndex:
                 note.path,
                 note.title,
                 json.dumps(list(note.tags)),
-                _tags_text(note.tags),
+                _tags_text(all_tags),
                 to_rfc3339(note.created_at),
                 to_rfc3339(note.updated_at),
                 note.idempotency_key,

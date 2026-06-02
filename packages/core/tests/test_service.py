@@ -127,6 +127,21 @@ def test_purge_keeps_recent(service: NoteService) -> None:
     assert len(service.list_trash()[0]) == 1
 
 
+def test_inline_tags_are_filterable(service: NoteService) -> None:
+    note = _create(service, "Inline", "body with an #ops tag", tags=[])
+    # Frontmatter tags are empty, but the inline #ops tag makes it filterable.
+    live, _ = service.list_notes(tag="ops")
+    assert [s.path for s in live] == [note.path]
+    assert [h.path for h in service.search("body", tag="ops")] == [note.path]
+    # Displayed tags stay frontmatter-only (the inline tag lives in the body).
+    assert live[0].tags == []
+
+
+def test_frontmatter_tag_filter_still_works(service: NoteService) -> None:
+    note = _create(service, "FM", "x", tags=["work"])
+    assert [s.path for s in service.list_notes(tag="work")[0]] == [note.path]
+
+
 def test_search_via_service(service: NoteService) -> None:
     _create(service, "Postgres", "how to back up postgres", tags=["ops"])
     _create(service, "Cooking", "how to bake bread")
