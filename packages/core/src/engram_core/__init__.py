@@ -26,6 +26,7 @@ from .errors import (
 from .link_extractor import ExtractedArticle, LinkFetchSettings, fetch_and_extract
 from .links import ParsedLink, extract_inline_tags, extract_links
 from .models import (
+    AttachmentInfo,
     GraphEdge,
     GraphNode,
     GraphView,
@@ -43,6 +44,7 @@ from .watcher import VaultWatcher
 __version__ = "0.1.0"
 
 __all__ = [
+    "AttachmentInfo",
     "BlockedHost",
     "EngramError",
     "ExtractedArticle",

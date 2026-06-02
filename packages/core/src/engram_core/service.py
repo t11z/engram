@@ -7,12 +7,14 @@ point, index follows) and idempotency. No web framework is imported here.
 
 from __future__ import annotations
 
+import mimetypes
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 
 from .config import Settings
+from .config_detect import detect_vault_config
 from .editing import append_body, replace_section
 from .errors import NoteConflict, NoteNotFound
 from .frontmatter import read_note_file
@@ -20,6 +22,7 @@ from .ids import new_ulid
 from .index import SearchIndex
 from .link_extractor import LinkFetchSettings, fetch_and_extract
 from .models import (
+    AttachmentInfo,
     GraphEdge,
     GraphNode,
     GraphView,
@@ -48,7 +51,12 @@ class ReindexReport:
 class NoteService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.store = VaultStore(settings.vault_path, settings.new_note_dir)
+        # Fill unset dirs from a well-known editor config in the vault, if present.
+        detected = detect_vault_config(settings.vault_path)
+        self.new_note_dir = settings.new_note_dir or detected.get("new_note_dir", "")
+        self.attachment_dir = settings.attachment_dir or detected.get("attachment_dir", "")
+        self.daily_note_dir = settings.daily_note_dir or detected.get("daily_note_dir", "")
+        self.store = VaultStore(settings.vault_path, self.new_note_dir)
         self.index = SearchIndex(settings.resolved_index_path)
 
     @classmethod
@@ -315,6 +323,48 @@ class NoteService:
     def list_tags(self) -> list[TagCount]:
         """All tags on live notes (frontmatter and inline) with counts."""
         return self.index.list_tags()
+
+    def list_attachments(self) -> list[AttachmentInfo]:
+        """Non-Markdown files in the vault (optionally scoped to the attachment dir)."""
+        prefix = f"{self.attachment_dir}/" if self.attachment_dir else ""
+        out: list[AttachmentInfo] = []
+        for rel, size in self.store.iter_attachments():
+            if prefix and not rel.startswith(prefix):
+                continue
+            content_type = mimetypes.guess_type(rel)[0] or "application/octet-stream"
+            out.append(AttachmentInfo(path=rel, size=size, content_type=content_type))
+        return out
+
+    def read_attachment(self, path: str) -> tuple[bytes, str]:
+        """Bytes and content type of an attachment. Raises ``NoteNotFound`` if absent."""
+        data = self.store.read_attachment(path)
+        content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        return data, content_type
+
+    def append_to_daily_note(self, text: str, *, now: datetime | None = None) -> Note:
+        """Append a block to today's daily note (``<daily_note_dir>/YYYY-MM-DD.md``),
+        creating it if it doesn't exist yet.
+        """
+        ts = now or datetime.now(UTC)
+        date = ts.strftime("%Y-%m-%d")
+        rel = f"{self.daily_note_dir}/{date}.md" if self.daily_note_dir else f"{date}.md"
+        if (self.settings.vault_path / rel).exists():
+            return self.append_to_note(rel, text, now=ts)
+        note = Note(
+            id=new_ulid() if self.settings.inject_id else None,
+            title=date,
+            created_at=ts,
+            updated_at=ts,
+            tags=[],
+            body=text,
+            path=rel,
+        )
+        stored = self.store.write(note)
+        abs_path = self.settings.vault_path / stored.path
+        size, mtime = self.store.stat(abs_path)
+        self.index.upsert(stored, size=size, mtime=mtime, etag=self.store.content_hash(abs_path))
+        self.index.resolve_links()
+        return stored
 
     # --- maintenance --------------------------------------------------------
 

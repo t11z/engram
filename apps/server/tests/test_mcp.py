@@ -5,6 +5,7 @@ from typing import cast
 import pytest
 from fastapi.testclient import TestClient
 
+from engram_core.errors import NoteNotFound
 from engram_server import mcp_server
 from engram_server.app import create_app
 from engram_server.config import ServerSettings
@@ -53,6 +54,14 @@ def test_graph_structure_and_editing_tools(client: TestClient) -> None:
     assert mcp_server.update_note(path=a, body="updated")["path"] == a
     assert mcp_server.append_to_note(path=a, text="more")["path"] == a
     assert mcp_server.patch_section(path=a, heading="Log", content="e")["path"] == a
+
+
+def test_attachment_and_daily_tools(client: TestClient) -> None:
+    assert isinstance(mcp_server.list_attachments(), list)  # sample vault has none
+    with pytest.raises(NoteNotFound):
+        mcp_server.read_attachment(path="missing.png")
+    daily = mcp_server.append_to_daily_note(text="- a dated jot")
+    assert str(daily["path"]).endswith(".md")
 
 
 def test_resources_and_prompts_over_wire(client: TestClient, auth: dict[str, str]) -> None:

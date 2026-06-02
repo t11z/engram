@@ -59,6 +59,12 @@ class PatchSectionRequest(BaseModel):
     content: str
 
 
+class DailyAppendRequest(BaseModel):
+    """Body for ``POST /api/v1/notes/daily/append``."""
+
+    text: str
+
+
 class LinkCreate(BaseModel):
     """Input for ``POST /api/v1/links``: a URL the server should fetch and import."""
 

@@ -49,8 +49,9 @@ nav:
   - Home: index.md
   - Quick start: quick-start.md
   - Installation: installation.md
+  - Deployment topologies: deployment.md
   - Configuration: configuration.md
-  - MCP tool reference: mcp-tools.md
+  - MCP reference: mcp-tools.md
   - API reference: api-reference.md
   - Privacy: privacy.md
   - Changelog: changelog.md
