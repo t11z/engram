@@ -13,13 +13,14 @@ describe("parse", () => {
 
   it("reads view/note/q/tag/folder", () => {
     expect(
-      parse(new URL("https://x/?view=search&note=1&q=hi&tag=ops&folder=projects")),
+      parse(new URL("https://x/?view=search&note=1&q=hi&tag=ops&folder=projects&new=1")),
     ).toEqual({
       view: "search",
       note: "1",
       q: "hi",
       tag: "ops",
       folder: "projects",
+      compose: true,
     });
   });
 });

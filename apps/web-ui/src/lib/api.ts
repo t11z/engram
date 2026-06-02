@@ -15,8 +15,14 @@ export type SearchResponse = components["schemas"]["SearchResponse"];
 export type OutgoingLink = components["schemas"]["OutgoingLink"];
 export type GraphView = components["schemas"]["GraphView"];
 export type TagCount = components["schemas"]["TagCount"];
+export type NoteCreate = components["schemas"]["NoteCreate"];
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export interface NoteWithEtag {
+  note: Note;
+  etag: string;
+}
+
+async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const tok = currentToken();
   const res = await fetch(`/api/v1${path}`, {
     ...init,
@@ -29,6 +35,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     disconnect();
     throw new ApiError(res.status, res.status === 401 ? "unauthorized" : "forbidden", "Session ended.");
   }
+  return res;
+}
+
+async function parseJson<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T;
   }
@@ -38,6 +48,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(res.status, error?.code ?? "error", error?.message ?? `Request failed (${res.status}).`);
   }
   return body as T;
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return parseJson<T>(await authedFetch(path, init));
 }
 
 function query(params: Record<string, string | null | undefined>): string {
@@ -78,6 +92,37 @@ export function search(args: { q: string; tag?: string | null }): Promise<Search
 export function listTrash(args: { cursor?: string } = {}): Promise<NoteListResponse> {
   if (DEMO) return demo.listTrash(args);
   return request(`/trash${query({ cursor: args.cursor })}`);
+}
+
+export async function getNoteWithEtag(path: string): Promise<NoteWithEtag> {
+  if (DEMO) return demo.getNoteWithEtag(path);
+  const res = await authedFetch(`/notes/by-path/${encodePath(path)}`);
+  const note = await parseJson<Note>(res);
+  return { note, etag: res.headers.get("ETag") ?? "" };
+}
+
+export function createNote(input: NoteCreate): Promise<Note> {
+  if (DEMO) return demo.createNote(input);
+  return request(`/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateNote(
+  path: string,
+  input: { title?: string; body?: string; tags?: string[] },
+  etag: string,
+): Promise<NoteWithEtag> {
+  if (DEMO) return demo.updateNote(path, input, etag);
+  const res = await authedFetch(`/notes/by-path/${encodePath(path)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "If-Match": etag },
+    body: JSON.stringify(input),
+  });
+  const note = await parseJson<Note>(res);
+  return { note, etag: res.headers.get("ETag") ?? "" };
 }
 
 export function getBacklinks(path: string): Promise<NoteListResponse> {

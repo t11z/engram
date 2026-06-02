@@ -3,11 +3,12 @@
 
   import FolderTree from "$lib/components/FolderTree.svelte";
   import NoteDetail from "$lib/components/NoteDetail.svelte";
+  import NoteEditor from "$lib/components/NoteEditor.svelte";
   import NoteList from "$lib/components/NoteList.svelte";
   import SearchView from "$lib/components/SearchView.svelte";
   import TagBrowser from "$lib/components/TagBrowser.svelte";
   import TrashView from "$lib/components/TrashView.svelte";
-  import { parse } from "$lib/nav";
+  import { navTo, parse } from "$lib/nav";
 
   const nav = $derived(parse(page.url));
 </script>
@@ -27,7 +28,12 @@
     {/if}
   </section>
   <section class="min-h-0">
-    {#if nav.note}
+    {#if nav.compose}
+      <NoteEditor
+        onsaved={(note) => navTo({ new: null, note: note.path })}
+        oncancel={() => navTo({ new: null })}
+      />
+    {:else if nav.note}
       <NoteDetail path={nav.note} />
     {:else}
       <div class="flex h-48 items-center justify-center rounded-stamp border border-ink-600 bg-ink-800/40">
