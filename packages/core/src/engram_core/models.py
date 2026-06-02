@@ -26,9 +26,15 @@ def from_rfc3339(value: str) -> datetime:
 
 
 class NoteMeta(BaseModel):
-    """The YAML frontmatter of a note. Unknown fields are rejected."""
+    """The YAML frontmatter of a note.
 
-    model_config = ConfigDict(extra="forbid")
+    Unknown keys are tolerated and preserved (kept in ``model_extra``), not
+    rejected: a shared vault may carry properties written by another editor, and
+    engram must round-trip them rather than drop the note. Known fields are still
+    validated.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     id: str
     title: str
@@ -65,6 +71,7 @@ class Note(NoteMeta):
             tags=list(self.tags),
             source_url=self.source_url,
             idempotency_key=self.idempotency_key,
+            **(self.model_extra or {}),
         )
 
     def to_summary(self) -> NoteSummary:

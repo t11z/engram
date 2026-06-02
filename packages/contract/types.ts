@@ -181,6 +181,8 @@ export interface components {
             title: string;
             /** Updated At */
             updated_at: string;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * NoteCreate
