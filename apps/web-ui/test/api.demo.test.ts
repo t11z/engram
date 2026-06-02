@@ -99,6 +99,6 @@ describe("demo api (mock store)", () => {
     expect(folders).toContain("2026");
 
     const graph = await api.getGraph(sourdough, 1);
-    expect(graph.nodes.some((n) => n.path === pourOver)).toBe(true);
+    expect((graph.nodes ?? []).some((n) => n.path === pourOver)).toBe(true);
   });
 });
