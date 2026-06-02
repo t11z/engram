@@ -81,4 +81,24 @@ describe("demo api (mock store)", () => {
   it("rejects restore for an unknown path", async () => {
     await expect(api.restore(".trash/nope.md")).rejects.toMatchObject({ status: 404 });
   });
+
+  it("resolves the seeded wikilink for links, backlinks, tags, and folders", async () => {
+    const sourdough = seedNotes[0].path;
+    const pourOver = seedNotes[1].path;
+
+    const links = await api.getLinks(sourdough);
+    expect(links.some((l) => l.resolved_path === pourOver)).toBe(true);
+
+    const backlinks = await api.getBacklinks(pourOver);
+    expect(backlinks.items.some((i) => i.path === sourdough)).toBe(true);
+
+    const tags = await api.listTags();
+    expect(tags.some((t) => t.tag === "kitchen")).toBe(true); // inline #kitchen
+
+    const folders = await api.listFolders();
+    expect(folders).toContain("2026");
+
+    const graph = await api.getGraph(sourdough, 1);
+    expect((graph.nodes ?? []).some((n) => n.path === pourOver)).toBe(true);
+  });
 });

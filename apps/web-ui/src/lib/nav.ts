@@ -10,6 +10,7 @@ export interface NavState {
   note: string | null;
   q: string;
   tag: string | null;
+  folder: string | null;
 }
 
 export function parse(url: URL): NavState {
@@ -20,6 +21,7 @@ export function parse(url: URL): NavState {
     note: url.searchParams.get("note"),
     q: url.searchParams.get("q") ?? "",
     tag: url.searchParams.get("tag"),
+    folder: url.searchParams.get("folder"),
   };
 }
 

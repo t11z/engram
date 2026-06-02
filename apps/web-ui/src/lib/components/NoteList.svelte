@@ -6,10 +6,18 @@
 
   import NoteListItem from "./NoteListItem.svelte";
 
-  let { tag = null, selectedPath = null }: { tag?: string | null; selectedPath?: string | null } =
-    $props();
+  let {
+    tag = null,
+    folder = null,
+    selectedPath = null,
+  }: { tag?: string | null; folder?: string | null; selectedPath?: string | null } = $props();
 
   let items = $state<NoteSummary[]>([]);
+  // Folder filtering is applied client-side over loaded pages (the list API
+  // filters by tag, not path); selecting a folder narrows what's shown.
+  const shown = $derived(
+    folder ? items.filter((item) => item.path.startsWith(`${folder}/`)) : items,
+  );
   let cursor = $state<string | null>(null);
   let loading = $state(false);
   let error = $state("");
@@ -38,10 +46,10 @@
 </script>
 
 <div class="overflow-hidden rounded-stamp border border-ink-600 bg-ink-800">
-  {#each items as item (item.path)}
+  {#each shown as item (item.path)}
     <NoteListItem {item} selected={item.path === selectedPath} />
   {/each}
-  {#if items.length === 0 && !loading}
+  {#if shown.length === 0 && !loading}
     <p class="px-4 py-6 font-mono text-xs uppercase tracking-widest text-chalk-700">
       Nothing inscribed yet.
     </p>
