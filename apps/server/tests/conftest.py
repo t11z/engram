@@ -22,6 +22,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClie
     monkeypatch.setenv("ENGRAM_VAULT_PATH", str(vault))
     monkeypatch.setenv("ENGRAM_INDEX_PATH", str(tmp_path / "index.db"))
     monkeypatch.setenv("ENGRAM_AUTH_TOKEN", TOKEN)
+    monkeypatch.setenv("ENGRAM_WATCH", "false")
     monkeypatch.delenv("ENGRAM_UI_DIR", raising=False)
     monkeypatch.delenv("ENGRAM_CORS_ORIGINS", raising=False)
     with TestClient(create_app(ServerSettings())) as test_client:

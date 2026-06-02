@@ -33,7 +33,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from engram_core import NoteService
+from engram_core import NoteService, VaultWatcher
 from engram_core import Settings as CoreSettings
 
 from . import __version__
@@ -155,10 +155,36 @@ def create_app(settings: ServerSettings | None = None) -> FastAPI:
         set_service(service)
         if oauth_store is not None:
             oauth_store.open()
+
+        # Live reconciliation (ADR-0011): a background watcher reconciles when the
+        # vault changes underneath us. It uses its own short-lived service (its own
+        # SQLite connection) so it never shares the request-serving connection
+        # across threads; WAL handles the concurrent writer.
+        watcher: VaultWatcher | None = None
+        if service.settings.watch:
+            worker_settings = service.settings
+
+            def refresh() -> None:
+                worker = NoteService(worker_settings)
+                worker.index.open()
+                try:
+                    worker.reconcile()
+                finally:
+                    worker.close()
+
+            watcher = VaultWatcher(
+                service.settings.vault_path,
+                refresh,
+                debounce=service.settings.watch_debounce_seconds,
+            )
+            watcher.start()
+
         try:
             async with mcp.session_manager.run():
                 yield
         finally:
+            if watcher is not None:
+                watcher.stop()
             set_service(None)
             service.close()
             if oauth_store is not None:

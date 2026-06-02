@@ -12,6 +12,7 @@ dependencies = [
     "trafilatura>=1.12,<3",
     "markdownify>=0.13,<2",
     "beautifulsoup4>=4.12,<5",
+    "watchdog>=4,<7",
 ]
 
 [build-system]
