@@ -17,7 +17,8 @@ from datetime import datetime
 from pathlib import Path
 
 from .errors import IndexUnavailable
-from .models import Note, NoteSummary, SearchResult, from_rfc3339, to_rfc3339
+from .links import LinkResolver, extract_links
+from .models import Note, NoteSummary, OutgoingLink, SearchResult, from_rfc3339, to_rfc3339
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS notes (
@@ -36,6 +37,15 @@ CREATE TABLE IF NOT EXISTS notes (
 CREATE INDEX IF NOT EXISTS idx_notes_live ON notes(deleted_at, updated_at DESC, id DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_idem ON notes(idempotency_key)
     WHERE idempotency_key IS NOT NULL AND deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS links (
+    src_id    TEXT NOT NULL,
+    dst_raw   TEXT NOT NULL,
+    link_type TEXT NOT NULL,
+    dst_id    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_links_src ON links(src_id);
+CREATE INDEX IF NOT EXISTS idx_links_dst ON links(dst_id);
 """
 
 _FTS = (
@@ -135,6 +145,18 @@ class SearchIndex:
                 "INSERT INTO notes_fts(rowid, title, body, tags) VALUES(?,?,?,?)",
                 (rowid, note.title, note.body, fts_tags),
             )
+            self.conn.execute("DELETE FROM links WHERE src_id = ?", (note.id,))
+            if deleted_at is None:
+                link_rows = [
+                    (note.id, link.target, link.type, None)
+                    for link in extract_links(note.body)
+                ]
+                if link_rows:
+                    self.conn.executemany(
+                        "INSERT INTO links(src_id, dst_raw, link_type, dst_id) "
+                        "VALUES(?,?,?,?)",
+                        link_rows,
+                    )
 
     def mark_trashed(self, note_id: str, path: str, deleted_at: datetime) -> None:
         with self.conn:
@@ -157,11 +179,42 @@ class SearchIndex:
                 return
             self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (row[0],))
             self.conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+            self.conn.execute("DELETE FROM links WHERE src_id = ?", (note_id,))
+            self.conn.execute("UPDATE links SET dst_id = NULL WHERE dst_id = ?", (note_id,))
 
     def clear(self) -> None:
         with self.conn:
             self.conn.execute("DELETE FROM notes_fts")
             self.conn.execute("DELETE FROM notes")
+            self.conn.execute("DELETE FROM links")
+
+    def resolve_links(self) -> None:
+        """Recompute ``dst_id`` for every link row against the current live notes.
+
+        Cheap to run after any single write and once at the end of a bulk
+        reconcile/reindex; keeps dangling links and rename effects globally
+        consistent without incremental bookkeeping.
+        """
+        with self.conn:
+            live = self.conn.execute(
+                "SELECT id, path FROM notes WHERE deleted_at IS NULL"
+            ).fetchall()
+            resolver = LinkResolver([str(r[1]) for r in live])
+            path_to_id = {str(r[1]): str(r[0]) for r in live}
+            src_paths = {
+                str(r[0]): str(r[1])
+                for r in self.conn.execute("SELECT id, path FROM notes").fetchall()
+            }
+            updates: list[tuple[str | None, int]] = []
+            for rowid, src_id, dst_raw, link_type in self.conn.execute(
+                "SELECT rowid, src_id, dst_raw, link_type FROM links"
+            ).fetchall():
+                src_path = src_paths.get(str(src_id), "")
+                dst_path = resolver.resolve(str(link_type), str(dst_raw), src_path)
+                dst_id = path_to_id.get(dst_path) if dst_path is not None else None
+                updates.append((dst_id, int(rowid)))
+            if updates:
+                self.conn.executemany("UPDATE links SET dst_id = ? WHERE rowid = ?", updates)
 
     # --- reads --------------------------------------------------------------
 
@@ -176,6 +229,42 @@ class SearchIndex:
             "SELECT id FROM notes WHERE idempotency_key = ? AND deleted_at IS NULL", (key,)
         ).fetchone()
         return None if row is None else str(row[0])
+
+    def backlinks(self, note_id: str) -> list[NoteSummary]:
+        """Live notes that link to ``note_id`` (newest first)."""
+        sql = (
+            "SELECT DISTINCT n.id, n.title, n.tags_json, n.updated_at, n.path "
+            "FROM links l JOIN notes n ON n.id = l.src_id "
+            "WHERE l.dst_id = ? AND n.deleted_at IS NULL "
+            "ORDER BY n.updated_at DESC, n.id DESC"
+        )
+        return [
+            NoteSummary(
+                id=str(r[0]),
+                title=str(r[1]),
+                tags=list(json.loads(r[2])),
+                updated_at=from_rfc3339(str(r[3])),
+                path=str(r[4]),
+            )
+            for r in self.conn.execute(sql, (note_id,)).fetchall()
+        ]
+
+    def outgoing_links(self, note_id: str) -> list[OutgoingLink]:
+        """Outgoing references from ``note_id``; ``resolved_*`` is None if dangling."""
+        sql = (
+            "SELECT l.dst_raw, l.link_type, l.dst_id, n.path "
+            "FROM links l LEFT JOIN notes n ON n.id = l.dst_id AND n.deleted_at IS NULL "
+            "WHERE l.src_id = ?"
+        )
+        return [
+            OutgoingLink(
+                target=str(r[0]),
+                type=str(r[1]),
+                resolved_id=str(r[2]) if r[2] is not None else None,
+                resolved_path=str(r[3]) if r[3] is not None else None,
+            )
+            for r in self.conn.execute(sql, (note_id,)).fetchall()
+        ]
 
     def all_rows(self) -> Iterator[tuple[str, str, int, float, str | None]]:
         for row in self.conn.execute(

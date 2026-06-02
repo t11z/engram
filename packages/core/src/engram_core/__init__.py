@@ -23,7 +23,8 @@ from .errors import (
     VaultError,
 )
 from .link_extractor import ExtractedArticle, LinkFetchSettings, fetch_and_extract
-from .models import Note, NoteCreate, NoteMeta, NoteSummary, SearchResult
+from .links import ParsedLink, extract_inline_tags, extract_links
+from .models import Note, NoteCreate, NoteMeta, NoteSummary, OutgoingLink, SearchResult
 from .service import LinkService, NoteService, ReconcileReport, ReindexReport
 
 __version__ = "0.1.0"
@@ -49,6 +50,8 @@ __all__ = [
     "NoteNotInTrash",
     "NoteService",
     "NoteSummary",
+    "OutgoingLink",
+    "ParsedLink",
     "ReconcileReport",
     "ReindexReport",
     "SearchResult",
@@ -56,5 +59,7 @@ __all__ = [
     "UnsupportedContentType",
     "VaultError",
     "__version__",
+    "extract_inline_tags",
+    "extract_links",
     "fetch_and_extract",
 ]
