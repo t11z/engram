@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { ApiError, deleteNote, getLinks, getNote, type Note, type OutgoingLink } from "$lib/api";
+  import {
+    ApiError,
+    deleteNote,
+    getLinks,
+    getNoteWithEtag,
+    type Note,
+    type OutgoingLink,
+  } from "$lib/api";
   import { navTo } from "$lib/nav";
   import { notifyMutation } from "$lib/refresh";
 
@@ -7,37 +14,54 @@
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import GraphView from "./GraphView.svelte";
   import MarkdownView from "./MarkdownView.svelte";
+  import NoteEditor from "./NoteEditor.svelte";
 
   let { path }: { path: string } = $props();
   let note = $state<Note | null>(null);
+  let etag = $state("");
   let links = $state<OutgoingLink[]>([]);
   let error = $state("");
   let confirming = $state(false);
+  let editing = $state(false);
 
-  $effect(() => {
-    const current = path;
+  async function load(p: string): Promise<void> {
     note = null;
     links = [];
     error = "";
-    void getNote(current)
-      .then((n) => {
-        if (current === path) note = n;
-      })
-      .catch((e) => {
-        if (!(e instanceof ApiError && e.isAuth)) {
-          error = e instanceof Error ? e.message : "Failed to load note.";
-        }
-      });
-    void getLinks(current)
-      .then((result) => {
-        if (current === path) links = result;
-      })
-      .catch(() => {});
+    try {
+      const res = await getNoteWithEtag(p);
+      if (p !== path) return;
+      note = res.note;
+      etag = res.etag;
+    } catch (e) {
+      if (!(e instanceof ApiError && e.isAuth)) {
+        error = e instanceof Error ? e.message : "Failed to load note.";
+      }
+      return;
+    }
+    try {
+      const result = await getLinks(p);
+      if (p === path) links = result;
+    } catch {
+      /* links are non-essential; ignore */
+    }
+  }
+
+  $effect(() => {
+    const current = path;
+    editing = false;
+    void load(current);
   });
 
   function followWikilink(target: string): void {
     const link = links.find((l) => l.target === target);
     if (link?.resolved_path) navTo({ note: link.resolved_path });
+  }
+
+  function onSaved(updated: Note): void {
+    note = updated;
+    editing = false;
+    void load(path);
   }
 
   async function confirmDelete(): Promise<void> {
@@ -54,7 +78,17 @@
   }
 </script>
 
-{#if error}
+{#if editing && note}
+  <NoteEditor
+    {path}
+    initialTitle={note.title}
+    initialBody={note.body}
+    initialTags={note.tags ?? []}
+    initialEtag={etag}
+    onsaved={onSaved}
+    oncancel={() => (editing = false)}
+  />
+{:else if error}
   <p class="font-sans text-sm text-oxide">{error}</p>
 {:else if note}
   <div class="space-y-4">
@@ -62,13 +96,22 @@
       <!-- Header row -->
       <div class="mb-4 flex items-start justify-between gap-4">
         <h1 class="font-display text-xl font-semibold leading-tight tracking-tight text-chalk-100">{note.title}</h1>
-        <button
-          type="button"
-          class="shrink-0 rounded border border-oxide/40 px-2.5 py-1 font-sans text-xs text-oxide transition-colors duration-150 hover:bg-oxide/10"
-          onclick={() => (confirming = true)}
-        >
-          Delete
-        </button>
+        <div class="flex shrink-0 gap-2">
+          <button
+            type="button"
+            class="rounded border border-ink-600 px-2.5 py-1 font-sans text-xs text-chalk-400 transition-colors duration-150 hover:text-chalk-100"
+            onclick={() => (editing = true)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            class="rounded border border-oxide/40 px-2.5 py-1 font-sans text-xs text-oxide transition-colors duration-150 hover:bg-oxide/10"
+            onclick={() => (confirming = true)}
+          >
+            Delete
+          </button>
+        </div>
       </div>
 
       <!-- Meta row -->

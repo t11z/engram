@@ -82,6 +82,22 @@ describe("demo api (mock store)", () => {
     await expect(api.restore(".trash/nope.md")).rejects.toMatchObject({ status: 404 });
   });
 
+  it("creates a note and then edits it", async () => {
+    const created = await api.createNote({ title: "Fresh Idea", body: "# Fresh\n\nbody", tags: ["x"] });
+    expect(created.path).toBe("fresh-idea.md");
+    expect(created.id).toBeNull();
+
+    const list = await api.listNotes();
+    expect(list.items.some((i) => i.path === "fresh-idea.md")).toBe(true);
+
+    const { note, etag } = await api.getNoteWithEtag("fresh-idea.md");
+    expect(note.title).toBe("Fresh Idea");
+
+    const res = await api.updateNote("fresh-idea.md", { body: "# Fresh\n\nupdated" }, etag);
+    expect(res.note.body).toContain("updated");
+    expect((await api.getNote("fresh-idea.md")).body).toContain("updated");
+  });
+
   it("resolves the seeded wikilink for links, backlinks, tags, and folders", async () => {
     const sourdough = seedNotes[0].path;
     const pourOver = seedNotes[1].path;

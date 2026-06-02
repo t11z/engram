@@ -11,6 +11,7 @@ export interface NavState {
   q: string;
   tag: string | null;
   folder: string | null;
+  compose: boolean;
 }
 
 export function parse(url: URL): NavState {
@@ -22,6 +23,7 @@ export function parse(url: URL): NavState {
     q: url.searchParams.get("q") ?? "",
     tag: url.searchParams.get("tag"),
     folder: url.searchParams.get("folder"),
+    compose: url.searchParams.get("new") !== null,
   };
 }
 

@@ -49,6 +49,15 @@
     >
       Trash
     </button>
+    <button
+      class="rounded px-3 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors duration-150"
+      class:text-amber-400={nav.compose}
+      class:text-chalk-500={!nav.compose}
+      class:hover:text-chalk-300={!nav.compose}
+      onclick={() => navTo({ view: null, note: null, new: "1" })}
+    >
+      New
+    </button>
 
     {#if DEMO}
       <span
