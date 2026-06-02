@@ -4,6 +4,57 @@
  */
 
 export interface paths {
+    "/api/v1/backlinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Backlinks */
+        get: operations["backlinks_api_v1_backlinks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Folders */
+        get: operations["folders_api_v1_folders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Graph */
+        get: operations["graph_api_v1_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/links": {
         parameters: {
             query?: never;
@@ -11,7 +62,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Links */
+        get: operations["links_api_v1_links_get"];
         put?: never;
         /** Create Link */
         post: operations["create_link_api_v1_links_post"];
@@ -39,6 +91,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notes/append": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append To Note */
+        post: operations["append_to_note_api_v1_notes_append_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes/by-path/{path}": {
         parameters: {
             query?: never;
@@ -48,10 +117,45 @@ export interface paths {
         };
         /** Get Note By Path */
         get: operations["get_note_by_path_api_v1_notes_by_path__path__get"];
-        put?: never;
+        /** Update Note By Path */
+        put: operations["update_note_by_path_api_v1_notes_by_path__path__put"];
         post?: never;
         /** Delete Note By Path */
         delete: operations["delete_note_by_path_api_v1_notes_by_path__path__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/by-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Note By Title */
+        get: operations["get_note_by_title_api_v1_notes_by_title_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/patch-section": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Patch Section */
+        post: operations["patch_section_api_v1_notes_patch_section_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -96,6 +200,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Related */
+        get: operations["related_api_v1_related_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/search": {
         parameters: {
             query?: never;
@@ -105,6 +226,23 @@ export interface paths {
         };
         /** Search */
         get: operations["search_api_v1_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tags */
+        get: operations["tags_api_v1_tags_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -151,6 +289,52 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AppendRequest
+         * @description Body for ``POST /api/v1/notes/append``.
+         */
+        AppendRequest: {
+            /** Path */
+            path: string;
+            /** Text */
+            text: string;
+        };
+        /**
+         * GraphEdge
+         * @description A directed link edge between two note paths.
+         */
+        GraphEdge: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Type */
+            type: string;
+        };
+        /**
+         * GraphNode
+         * @description A node in a scoped link graph (a note).
+         */
+        GraphNode: {
+            /** Id */
+            id?: string | null;
+            /** Path */
+            path: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * GraphView
+         * @description A scoped neighbourhood of the link graph around a focus note.
+         */
+        GraphView: {
+            /** Edges */
+            edges?: components["schemas"]["GraphEdge"][];
+            /** Focus */
+            focus: string;
+            /** Nodes */
+            nodes?: components["schemas"]["GraphNode"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -246,6 +430,47 @@ export interface components {
             updated_at: string;
         };
         /**
+         * NoteUpdate
+         * @description Body for ``PUT /api/v1/notes/by-path/{path}``: fields to replace (all optional).
+         */
+        NoteUpdate: {
+            /** Body */
+            body?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * OutgoingLink
+         * @description An outgoing reference from a note, with its resolution against the vault.
+         *
+         *     ``resolved_path``/``resolved_id`` are ``None`` for a dangling link (a target
+         *     that matches no note — e.g. a stub for a note not yet written).
+         */
+        OutgoingLink: {
+            /** Resolved Id */
+            resolved_id?: string | null;
+            /** Resolved Path */
+            resolved_path?: string | null;
+            /** Target */
+            target: string;
+            /** Type */
+            type: string;
+        };
+        /**
+         * PatchSectionRequest
+         * @description Body for ``POST /api/v1/notes/patch-section``.
+         */
+        PatchSectionRequest: {
+            /** Content */
+            content: string;
+            /** Heading */
+            heading: string;
+            /** Path */
+            path: string;
+        };
+        /**
          * RestoreRequest
          * @description Input for ``POST /api/v1/notes/restore``: the trash-relative path to restore.
          */
@@ -278,6 +503,16 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
+        /**
+         * TagCount
+         * @description A tag and how many live notes carry it (frontmatter or inline).
+         */
+        TagCount: {
+            /** Count */
+            count: number;
+            /** Tag */
+            tag: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -300,6 +535,120 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    backlinks_api_v1_backlinks_get: {
+        parameters: {
+            query: {
+                path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    folders_api_v1_folders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    graph_api_v1_graph_get: {
+        parameters: {
+            query: {
+                path: string;
+                depth?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    links_api_v1_links_get: {
+        parameters: {
+            query: {
+                path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutgoingLink"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_link_api_v1_links_post: {
         parameters: {
             query?: never;
@@ -417,6 +766,39 @@ export interface operations {
             };
         };
     };
+    append_to_note_api_v1_notes_append_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppendRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_note_by_path_api_v1_notes_by_path__path__get: {
         parameters: {
             query?: never;
@@ -427,6 +809,43 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_note_by_path_api_v1_notes_by_path__path__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -465,6 +884,70 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_note_by_title_api_v1_notes_by_title_get: {
+        parameters: {
+            query: {
+                title: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_section_api_v1_notes_patch_section_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -570,6 +1053,37 @@ export interface operations {
             };
         };
     };
+    related_api_v1_related_get: {
+        parameters: {
+            query: {
+                path: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_api_v1_search_get: {
         parameters: {
             query: {
@@ -599,6 +1113,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tags_api_v1_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagCount"][];
                 };
             };
         };

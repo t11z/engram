@@ -6,11 +6,28 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Response
 
-from engram_core import LinkService, Note, NoteCreate, NoteService
+from engram_core import (
+    GraphView,
+    LinkService,
+    Note,
+    NoteCreate,
+    NoteService,
+    OutgoingLink,
+    TagCount,
+)
 
-from .schemas import LinkCreate, NoteListResponse, RestoreRequest, SearchResponse
+from .errors import PreconditionRequired
+from .schemas import (
+    AppendRequest,
+    LinkCreate,
+    NoteListResponse,
+    NoteUpdate,
+    PatchSectionRequest,
+    RestoreRequest,
+    SearchResponse,
+)
 from .service import get_link_service, get_service
 
 router = APIRouter(prefix="/api/v1")
@@ -56,15 +73,59 @@ async def restore_note(data: RestoreRequest, service: ServiceDep) -> Note:
     return service.restore(data.path)
 
 
+@router.get("/notes/by-title", response_model=Note)
+async def get_note_by_title(
+    service: ServiceDep, response: Response, title: str = Query(...)
+) -> Note:
+    note = service.get_by_title(title)
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
+
+
 @router.get("/notes/by-path/{path:path}", response_model=Note)
-async def get_note_by_path(path: str, service: ServiceDep) -> Note:
-    return service.get(path)
+async def get_note_by_path(path: str, service: ServiceDep, response: Response) -> Note:
+    note = service.get(path)
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
+
+
+@router.put("/notes/by-path/{path:path}", response_model=Note)
+async def update_note_by_path(
+    path: str,
+    data: NoteUpdate,
+    service: ServiceDep,
+    response: Response,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
+) -> Note:
+    if if_match is None:
+        raise PreconditionRequired()
+    note = service.update_note(
+        path, title=data.title, body=data.body, tags=data.tags, expected_etag=if_match
+    )
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
 
 
 @router.delete("/notes/by-path/{path:path}", status_code=204)
 async def delete_note_by_path(path: str, service: ServiceDep) -> Response:
     service.delete(path)
     return Response(status_code=204)
+
+
+@router.post("/notes/append", response_model=Note)
+async def append_to_note(data: AppendRequest, service: ServiceDep, response: Response) -> Note:
+    note = service.append_to_note(data.path, data.text)
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
+
+
+@router.post("/notes/patch-section", response_model=Note)
+async def patch_section(
+    data: PatchSectionRequest, service: ServiceDep, response: Response
+) -> Note:
+    note = service.patch_section(data.path, data.heading, data.content)
+    response.headers["ETag"] = service.get_etag(note.path) or ""
+    return note
 
 
 @router.get("/notes/{handle}", response_model=Note)
@@ -98,3 +159,35 @@ async def list_trash(
 ) -> NoteListResponse:
     items, next_cursor = service.list_trash(limit=limit, cursor=cursor)
     return NoteListResponse(items=items, next_cursor=next_cursor)
+
+
+@router.get("/backlinks", response_model=NoteListResponse)
+async def backlinks(service: ServiceDep, path: str = Query(...)) -> NoteListResponse:
+    return NoteListResponse(items=service.get_backlinks(path), next_cursor=None)
+
+
+@router.get("/related", response_model=NoteListResponse)
+async def related(service: ServiceDep, path: str = Query(...)) -> NoteListResponse:
+    return NoteListResponse(items=service.get_related(path), next_cursor=None)
+
+
+@router.get("/links", response_model=list[OutgoingLink])
+async def links(service: ServiceDep, path: str = Query(...)) -> list[OutgoingLink]:
+    return service.get_outgoing_links(path)
+
+
+@router.get("/graph", response_model=GraphView)
+async def graph(
+    service: ServiceDep, path: str = Query(...), depth: int = Query(1, ge=1, le=4)
+) -> GraphView:
+    return service.get_graph(path, depth=depth)
+
+
+@router.get("/folders", response_model=list[str])
+async def folders(service: ServiceDep) -> list[str]:
+    return service.list_folders()
+
+
+@router.get("/tags", response_model=list[TagCount])
+async def tags(service: ServiceDep) -> list[TagCount]:
+    return service.list_tags()

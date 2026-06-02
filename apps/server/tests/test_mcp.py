@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -36,6 +37,39 @@ def test_delete_note_tool(client: TestClient) -> None:
     assert mcp_server.delete_note(path=path) == {"path": path, "status": "deleted"}
 
 
+def test_graph_structure_and_editing_tools(client: TestClient) -> None:
+    a = str(mcp_server.save_note(title="A", body="a body")["path"])
+    b = str(mcp_server.save_note(title="B", body=f"links to [[{a[:-3]}]]")["path"])
+
+    assert [i["path"] for i in mcp_server.get_backlinks(path=a)] == [b]
+    assert any(link["resolved_path"] == a for link in mcp_server.get_links(path=b))
+    assert any(i["path"] == a for i in mcp_server.get_related(path=b))
+    nodes = cast(list[dict[str, object]], mcp_server.get_graph(path=b, depth=1)["nodes"])
+    assert {a, b} <= {n["path"] for n in nodes}
+    assert isinstance(mcp_server.list_folders(), list)
+    assert any(t["tag"] for t in mcp_server.list_tags()) or mcp_server.list_tags() == []
+    assert mcp_server.get_note_by_title(title="A")["path"] == a
+
+    assert mcp_server.update_note(path=a, body="updated")["path"] == a
+    assert mcp_server.append_to_note(path=a, text="more")["path"] == a
+    assert mcp_server.patch_section(path=a, heading="Log", content="e")["path"] == a
+
+
+def test_resources_and_prompts_over_wire(client: TestClient, auth: dict[str, str]) -> None:
+    session = _initialize(client, auth)
+    templates = client.post(
+        "/mcp/",
+        headers=session,
+        json={"jsonrpc": "2.0", "id": 5, "method": "resources/templates/list"},
+    )
+    assert "engram://note/" in templates.text
+    prompts = client.post(
+        "/mcp/", headers=session, json={"jsonrpc": "2.0", "id": 6, "method": "prompts/list"}
+    )
+    for name in ["summarize_note", "find_related", "daily_review"]:
+        assert name in prompts.text
+
+
 def _initialize(client: TestClient, auth: dict[str, str]) -> dict[str, str]:
     headers = {
         **auth,
@@ -69,7 +103,18 @@ def test_tools_list_over_wire(client: TestClient, auth: dict[str, str]) -> None:
         "/mcp/", headers=session, json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
     )
     assert r.status_code == 200
-    for name in ["save_note", "search_notes", "read_note", "list_notes", "delete_note"]:
+    for name in [
+        "save_note",
+        "search_notes",
+        "read_note",
+        "list_notes",
+        "delete_note",
+        "get_backlinks",
+        "get_graph",
+        "list_tags",
+        "update_note",
+        "patch_section",
+    ]:
         assert name in r.text
 
 

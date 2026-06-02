@@ -21,16 +21,27 @@ from engram_core.errors import (
     LinkTooLarge,
     LinkUnreachable,
     NoteAlreadyExists,
+    NoteConflict,
     NoteNotFound,
     NoteNotInTrash,
     UnsupportedContentType,
     VaultError,
 )
 
+
+class PreconditionRequired(EngramError):
+    """A write that needs an ``If-Match`` precondition was sent without one."""
+
+    def __init__(self) -> None:
+        super().__init__("An If-Match header is required for this write.")
+
+
 _STATUS: dict[type[EngramError], tuple[int, str]] = {
+    PreconditionRequired: (428, "precondition_required"),
     NoteNotFound: (404, "not_found"),
     NoteNotInTrash: (404, "not_in_trash"),
     NoteAlreadyExists: (409, "already_exists"),
+    NoteConflict: (409, "conflict"),
     InvalidNote: (400, "invalid_note"),
     IndexUnavailable: (503, "index_unavailable"),
     VaultError: (500, "vault_error"),
