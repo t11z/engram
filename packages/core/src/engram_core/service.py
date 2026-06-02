@@ -74,8 +74,10 @@ class NoteService:
             path="",
         )
         stored = self.store.write(note)
-        size, mtime = self.store.stat(self.settings.vault_path / stored.path)
-        self.index.upsert(stored, size=size, mtime=mtime)
+        abs_path = self.settings.vault_path / stored.path
+        size, mtime = self.store.stat(abs_path)
+        etag = self.store.content_hash(abs_path)
+        self.index.upsert(stored, size=size, mtime=mtime, etag=etag)
         self.index.resolve_links()
         return stored, True
 
@@ -136,6 +138,13 @@ class NoteService:
     ) -> tuple[list[NoteSummary], str | None]:
         return self.index.list_trash(limit=limit, cursor=cursor)
 
+    def get_etag(self, handle: str) -> str | None:
+        """Content-hash version token for a live note (path or id). Used as the
+        `If-Match` precondition for in-place edits. Raises ``NoteNotFound``.
+        """
+        note = self.get(handle)
+        return self.index.etag_for(note.path)
+
     def get_backlinks(self, handle: str) -> list[NoteSummary]:
         """Live notes that link to ``handle`` (path or id). Raises ``NoteNotFound``."""
         note = self.get(handle)
@@ -165,18 +174,21 @@ class NoteService:
             return by_id.get(note.id) if note.id is not None else by_path.get(note.path)
 
         for note in self.store.iter_notes():
-            size, mtime = self.store.stat(self.settings.vault_path / note.path)
+            abs_path = self.settings.vault_path / note.path
+            size, mtime = self.store.stat(abs_path)
             row = match(note)
             if row is not None and row[5] is None and row[2] == note.path and not _changed(
                 row, size, mtime
             ):
                 seen.add(row[0])
             else:
-                seen.add(self.index.upsert(note, size=size, mtime=mtime))
+                etag = self.store.content_hash(abs_path)
+                seen.add(self.index.upsert(note, size=size, mtime=mtime, etag=etag))
                 indexed += 1
 
         for note in self.store.iter_trash():
-            size, mtime = self.store.stat(self.settings.vault_path / note.path)
+            abs_path = self.settings.vault_path / note.path
+            size, mtime = self.store.stat(abs_path)
             deleted_at = datetime.fromtimestamp(mtime, tz=UTC)
             row = match(note)
             if row is not None and row[5] is not None and row[2] == note.path and not _changed(
@@ -184,7 +196,12 @@ class NoteService:
             ):
                 seen.add(row[0])
             else:
-                seen.add(self.index.upsert(note, size=size, mtime=mtime, deleted_at=deleted_at))
+                etag = self.store.content_hash(abs_path)
+                seen.add(
+                    self.index.upsert(
+                        note, size=size, mtime=mtime, etag=etag, deleted_at=deleted_at
+                    )
+                )
                 indexed += 1
 
         removed = 0
@@ -200,15 +217,22 @@ class NoteService:
         self.index.clear()
         live = 0
         for note in self.store.iter_notes():
-            size, mtime = self.store.stat(self.settings.vault_path / note.path)
-            self.index.upsert(note, size=size, mtime=mtime)
+            abs_path = self.settings.vault_path / note.path
+            size, mtime = self.store.stat(abs_path)
+            self.index.upsert(
+                note, size=size, mtime=mtime, etag=self.store.content_hash(abs_path)
+            )
             live += 1
         trash = 0
         for note in self.store.iter_trash():
             abs_path = self.settings.vault_path / note.path
             size, mtime = self.store.stat(abs_path)
             self.index.upsert(
-                note, size=size, mtime=mtime, deleted_at=datetime.fromtimestamp(mtime, tz=UTC)
+                note,
+                size=size,
+                mtime=mtime,
+                etag=self.store.content_hash(abs_path),
+                deleted_at=datetime.fromtimestamp(mtime, tz=UTC),
             )
             trash += 1
         self.index.resolve_links()

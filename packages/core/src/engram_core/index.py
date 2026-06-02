@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS notes (
     idempotency_key TEXT,
     size            INTEGER NOT NULL,
     mtime           REAL NOT NULL,
-    deleted_at      TEXT
+    deleted_at      TEXT,
+    etag            TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_id ON notes(id) WHERE id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_path ON notes(path);
@@ -87,6 +88,10 @@ class SearchIndex:
         try:
             conn.executescript(_SCHEMA)
             conn.execute(_FTS)
+            # Upgrade an index created before the etag column existed.
+            cols = {row[1] for row in conn.execute("PRAGMA table_info(notes)").fetchall()}
+            if "etag" not in cols:
+                conn.execute("ALTER TABLE notes ADD COLUMN etag TEXT")
         except sqlite3.OperationalError as exc:
             conn.close()
             if "fts5" in str(exc).lower():
@@ -111,10 +116,17 @@ class SearchIndex:
     # --- writes -------------------------------------------------------------
 
     def upsert(
-        self, note: Note, *, size: int, mtime: float, deleted_at: datetime | None = None
+        self,
+        note: Note,
+        *,
+        size: int,
+        mtime: float,
+        etag: str | None = None,
+        deleted_at: datetime | None = None,
     ) -> int:
         """Insert or update a note's row, matched by ``id`` (if any) else ``path``.
-        Returns the surrogate ``noteid``.
+        ``etag`` is the content-hash version token (ADR-0009). Returns the
+        surrogate ``noteid``.
         """
         deleted = to_rfc3339(deleted_at) if deleted_at is not None else None
         fts_tags = " ".join(note.tags)
@@ -132,18 +144,20 @@ class SearchIndex:
                 size,
                 mtime,
                 deleted,
+                etag,
             )
             if noteid is None:
                 cur = self.conn.execute(
                     "INSERT INTO notes(id,path,title,tags_json,tags_text,created_at,updated_at,"
-                    "idempotency_key,size,mtime,deleted_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    "idempotency_key,size,mtime,deleted_at,etag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                     values,
                 )
                 noteid = int(cur.lastrowid or 0)
             else:
                 self.conn.execute(
                     "UPDATE notes SET id=?,path=?,title=?,tags_json=?,tags_text=?,created_at=?,"
-                    "updated_at=?,idempotency_key=?,size=?,mtime=?,deleted_at=? WHERE noteid=?",
+                    "updated_at=?,idempotency_key=?,size=?,mtime=?,deleted_at=?,etag=? "
+                    "WHERE noteid=?",
                     (*values, noteid),
                 )
                 self.conn.execute("DELETE FROM notes_fts WHERE rowid = ?", (noteid,))
@@ -233,6 +247,16 @@ class SearchIndex:
             "SELECT path FROM notes WHERE path = ? AND deleted_at IS NULL", (handle,)
         ).fetchone()
         return None if row is None else str(row[0])
+
+    def etag_for(self, handle: str) -> str | None:
+        """Cached content-hash token for a live note addressed by id or path."""
+        for column in ("id", "path"):
+            row = self.conn.execute(
+                f"SELECT etag FROM notes WHERE {column} = ? AND deleted_at IS NULL", (handle,)
+            ).fetchone()
+            if row is not None:
+                return None if row[0] is None else str(row[0])
+        return None
 
     def find_by_idempotency_key(self, key: str) -> str | None:
         row = self.conn.execute(
