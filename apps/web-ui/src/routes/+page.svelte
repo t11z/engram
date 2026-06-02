@@ -1,9 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
 
+  import FolderTree from "$lib/components/FolderTree.svelte";
   import NoteDetail from "$lib/components/NoteDetail.svelte";
   import NoteList from "$lib/components/NoteList.svelte";
   import SearchView from "$lib/components/SearchView.svelte";
+  import TagBrowser from "$lib/components/TagBrowser.svelte";
   import TrashView from "$lib/components/TrashView.svelte";
   import { parse } from "$lib/nav";
 
@@ -17,7 +19,11 @@
     {:else if nav.view === "trash"}
       <TrashView />
     {:else}
-      <NoteList tag={nav.tag} selectedPath={nav.note} />
+      <div class="space-y-3">
+        <TagBrowser selected={nav.tag} />
+        <FolderTree selected={nav.folder} />
+        <NoteList tag={nav.tag} folder={nav.folder} selectedPath={nav.note} />
+      </div>
     {/if}
   </section>
   <section class="min-h-0">

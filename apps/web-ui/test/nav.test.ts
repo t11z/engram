@@ -11,12 +11,15 @@ describe("parse", () => {
     expect(parse(new URL("https://x/?view=bogus")).view).toBe("list");
   });
 
-  it("reads view/note/q/tag", () => {
-    expect(parse(new URL("https://x/?view=search&note=1&q=hi&tag=ops"))).toEqual({
+  it("reads view/note/q/tag/folder", () => {
+    expect(
+      parse(new URL("https://x/?view=search&note=1&q=hi&tag=ops&folder=projects")),
+    ).toEqual({
       view: "search",
       note: "1",
       q: "hi",
       tag: "ops",
+      folder: "projects",
     });
   });
 });
