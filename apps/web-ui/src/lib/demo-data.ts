@@ -16,7 +16,7 @@ export const seedNotes: Note[] = [
     created_at: "2026-01-08T07:30:00Z",
     updated_at: "2026-05-18T07:45:00Z",
     body:
-      "# Sourdough starter\n\nKeep the rhythm and it stays happy.\n\n- **Morning** — discard half, feed 1:1:1 (starter : flour : water by weight).\n- **Evening** — same feed, keep at room temperature (~22 °C).\n- Ready to bake when it **doubles in 4–6 hours** and passes the float test.\n\n> Going away? Move it to the fridge and feed once a week.\n",
+      "# Sourdough starter\n\nKeep the rhythm and it stays happy.\n\n- **Morning** — discard half, feed 1:1:1 (starter : flour : water by weight).\n- **Evening** — same feed, keep at room temperature (~22 °C).\n- Ready to bake when it **doubles in 4–6 hours** and passes the float test.\n\n> Going away? Move it to the fridge and feed once a week.\n\nSee also [[pour-over-coffee-ratio]] for the morning routine. #kitchen\n",
   },
   {
     id: "01JADEMO000000000000000002",

@@ -12,6 +12,9 @@ export type NoteSummary = components["schemas"]["NoteSummary"];
 export type NoteListResponse = components["schemas"]["NoteListResponse"];
 export type SearchResult = components["schemas"]["SearchResult"];
 export type SearchResponse = components["schemas"]["SearchResponse"];
+export type OutgoingLink = components["schemas"]["OutgoingLink"];
+export type GraphView = components["schemas"]["GraphView"];
+export type TagCount = components["schemas"]["TagCount"];
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const tok = currentToken();
@@ -75,6 +78,36 @@ export function search(args: { q: string; tag?: string | null }): Promise<Search
 export function listTrash(args: { cursor?: string } = {}): Promise<NoteListResponse> {
   if (DEMO) return demo.listTrash(args);
   return request(`/trash${query({ cursor: args.cursor })}`);
+}
+
+export function getBacklinks(path: string): Promise<NoteListResponse> {
+  if (DEMO) return demo.getBacklinks(path);
+  return request(`/backlinks${query({ path })}`);
+}
+
+export function getRelated(path: string): Promise<NoteListResponse> {
+  if (DEMO) return demo.getRelated(path);
+  return request(`/related${query({ path })}`);
+}
+
+export function getLinks(path: string): Promise<OutgoingLink[]> {
+  if (DEMO) return demo.getLinks(path);
+  return request(`/links${query({ path })}`);
+}
+
+export function getGraph(path: string, depth = 1): Promise<GraphView> {
+  if (DEMO) return demo.getGraph(path, depth);
+  return request(`/graph${query({ path, depth: String(depth) })}`);
+}
+
+export function listFolders(): Promise<string[]> {
+  if (DEMO) return demo.listFolders();
+  return request(`/folders`);
+}
+
+export function listTags(): Promise<TagCount[]> {
+  if (DEMO) return demo.listTags();
+  return request(`/tags`);
 }
 
 export function restore(path: string): Promise<Note> {
