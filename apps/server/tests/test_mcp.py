@@ -87,6 +87,7 @@ def test_bare_mcp_path_reaches_transport(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setenv("ENGRAM_VAULT_PATH", str(vault))
     monkeypatch.setenv("ENGRAM_INDEX_PATH", str(tmp_path / "index.db"))
     monkeypatch.setenv("ENGRAM_AUTH_TOKEN", TOKEN)
+    monkeypatch.setenv("ENGRAM_WATCH", "false")
     monkeypatch.setenv("ENGRAM_UI_DIR", str(ui_dir))
     monkeypatch.delenv("ENGRAM_CORS_ORIGINS", raising=False)
 

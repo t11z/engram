@@ -26,6 +26,7 @@ from .link_extractor import ExtractedArticle, LinkFetchSettings, fetch_and_extra
 from .links import ParsedLink, extract_inline_tags, extract_links
 from .models import Note, NoteCreate, NoteMeta, NoteSummary, OutgoingLink, SearchResult
 from .service import LinkService, NoteService, ReconcileReport, ReindexReport
+from .watcher import VaultWatcher
 
 __version__ = "0.1.0"
 
@@ -58,6 +59,7 @@ __all__ = [
     "Settings",
     "UnsupportedContentType",
     "VaultError",
+    "VaultWatcher",
     "__version__",
     "extract_inline_tags",
     "extract_links",

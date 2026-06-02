@@ -54,6 +54,19 @@ def test_reconcile_detects_out_of_band_trash(service: NoteService, temp_vault: P
     assert len(trash) == TRASH_COUNT + 1
 
 
+def test_reconcile_tolerates_sync_conflict_file(service: NoteService, temp_vault: Path) -> None:
+    # A sync tool drops a conflict copy alongside a note. It must be indexed
+    # harmlessly (surfaced, not crashing) — engram never resolves conflicts.
+    (temp_vault / "reading-list.sync-conflict-20260101-000000-ABCDEFG.md").write_text(
+        "---\ntitle: Reading list (conflicted copy)\n---\n\nzzconflict marker\n",
+        encoding="utf-8",
+    )
+    service.reconcile()
+    live, _ = service.list_notes(limit=50)
+    assert len(live) == LIVE_COUNT + 1
+    assert [h.path for h in service.search("zzconflict")]
+
+
 def test_reindex_is_reproducible(service: NoteService) -> None:
     before_live = [s.id for s in service.list_notes(limit=50)[0]]
     before_search = [(h.id, round(h.score, 6), h.snippet) for h in service.search("postgres")]

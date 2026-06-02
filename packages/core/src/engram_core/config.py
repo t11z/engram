@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     inject_id: bool = False
     # Sub-directory (relative to the vault) for notes engram creates; empty = root.
     new_note_dir: str = ""
+    # Watch the vault and reconcile live (ADR-0011) while the server runs.
+    watch: bool = True
+    watch_debounce_seconds: float = 0.5
 
     @property
     def resolved_index_path(self) -> Path:
