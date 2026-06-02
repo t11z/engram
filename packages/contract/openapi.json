@@ -91,8 +91,15 @@
             "type": "string"
           },
           "id": {
-            "title": "Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "idempotency_key": {
             "anyOf": [
@@ -137,7 +144,6 @@
           }
         },
         "required": [
-          "id",
           "title",
           "created_at",
           "updated_at",
@@ -226,8 +232,15 @@
         "description": "A lightweight projection for list and search results (no body).",
         "properties": {
           "id": {
-            "title": "Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "path": {
             "title": "Path",
@@ -250,12 +263,25 @@
           }
         },
         "required": [
-          "id",
           "title",
           "updated_at",
           "path"
         ],
         "title": "NoteSummary",
+        "type": "object"
+      },
+      "RestoreRequest": {
+        "description": "Input for ``POST /api/v1/notes/restore``: the trash-relative path to restore.",
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "RestoreRequest",
         "type": "object"
       },
       "SearchResponse": {
@@ -278,8 +304,15 @@
         "description": "A search hit: a summary plus relevance score and a text snippet.",
         "properties": {
           "id": {
-            "title": "Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
           },
           "path": {
             "title": "Path",
@@ -310,7 +343,6 @@
           }
         },
         "required": [
-          "id",
           "title",
           "updated_at",
           "path",
@@ -536,16 +568,123 @@
         "summary": "Create Note"
       }
     },
-    "/api/v1/notes/{note_id}": {
+    "/api/v1/notes/by-path/{path}": {
       "delete": {
-        "operationId": "delete_note_api_v1_notes__note_id__delete",
+        "operationId": "delete_note_by_path_api_v1_notes_by_path__path__delete",
         "parameters": [
           {
             "in": "path",
-            "name": "note_id",
+            "name": "path",
             "required": true,
             "schema": {
-              "title": "Note Id",
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Note By Path"
+      },
+      "get": {
+        "operationId": "get_note_by_path_api_v1_notes_by_path__path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Note By Path"
+      }
+    },
+    "/api/v1/notes/restore": {
+      "post": {
+        "operationId": "restore_note_api_v1_notes_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Note"
+      }
+    },
+    "/api/v1/notes/{handle}": {
+      "delete": {
+        "operationId": "delete_note_api_v1_notes__handle__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "handle",
+            "required": true,
+            "schema": {
+              "title": "Handle",
               "type": "string"
             }
           }
@@ -568,14 +707,15 @@
         "summary": "Delete Note"
       },
       "get": {
-        "operationId": "get_note_api_v1_notes__note_id__get",
+        "description": "Fetch a note by its id alias or a top-level path handle (use\n``/notes/by-path/{path}`` for nested paths).",
+        "operationId": "get_note_api_v1_notes__handle__get",
         "parameters": [
           {
             "in": "path",
-            "name": "note_id",
+            "name": "handle",
             "required": true,
             "schema": {
-              "title": "Note Id",
+              "title": "Handle",
               "type": "string"
             }
           }
@@ -603,45 +743,6 @@
           }
         },
         "summary": "Get Note"
-      }
-    },
-    "/api/v1/notes/{note_id}/restore": {
-      "post": {
-        "operationId": "restore_note_api_v1_notes__note_id__restore_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "note_id",
-            "required": true,
-            "schema": {
-              "title": "Note Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Note"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Restore Note"
       }
     },
     "/api/v1/search": {

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from engram_core.ids import is_valid_ulid, new_ulid, ulid_timestamp
-from engram_core.slug import build_filename, short_suffix, slugify
+from engram_core.slug import build_filename, slugify
 
 
 def test_new_ulid_is_valid_and_26_chars() -> None:
@@ -39,12 +39,6 @@ def test_slugify_respects_max_len() -> None:
     assert slugify("a" * 100, max_len=10) == "a" * 10
 
 
-def test_short_suffix_deterministic() -> None:
-    ulid = "01J0000000000000000000ABCD"
-    assert short_suffix(ulid) == "abcd"
-
-
 def test_build_filename() -> None:
-    dt = datetime(2026, 1, 10, 8, 30, tzinfo=UTC)
-    assert build_filename(dt, "hi") == "2026-01-10-hi.md"
-    assert build_filename(dt, "hi", "abcd") == "2026-01-10-hi-abcd.md"
+    assert build_filename("hi") == "hi.md"
+    assert build_filename("hi", 2) == "hi-2.md"

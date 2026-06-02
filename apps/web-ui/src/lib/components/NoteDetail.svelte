@@ -6,18 +6,18 @@
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import MarkdownView from "./MarkdownView.svelte";
 
-  let { id }: { id: string } = $props();
+  let { path }: { path: string } = $props();
   let note = $state<Note | null>(null);
   let error = $state("");
   let confirming = $state(false);
 
   $effect(() => {
-    const current = id;
+    const current = path;
     note = null;
     error = "";
     void getNote(current)
       .then((n) => {
-        if (current === id) note = n;
+        if (current === path) note = n;
       })
       .catch((e) => {
         if (!(e instanceof ApiError && e.isAuth)) {
@@ -29,7 +29,7 @@
   async function confirmDelete(): Promise<void> {
     confirming = false;
     try {
-      await deleteNote(id);
+      await deleteNote(path);
       notifyMutation();
       navTo({ note: null });
     } catch (e) {

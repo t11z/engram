@@ -41,16 +41,21 @@ def index(tmp_path: Path) -> Iterator[SearchIndex]:
     idx.close()
 
 
-def _put(index: SearchIndex, note: Note, deleted_at: datetime | None = None) -> None:
-    index.upsert(note, size=len(note.body), mtime=1.0, deleted_at=deleted_at)
+def _put(index: SearchIndex, note: Note, deleted_at: datetime | None = None) -> int:
+    return index.upsert(note, size=len(note.body), mtime=1.0, deleted_at=deleted_at)
+
+
+def _trash(index: SearchIndex, note: Note, deleted_at: datetime = BASE) -> None:
+    """Trash a note: re-upsert it (matched by id) at its trash path, deleted."""
+    trashed = note.model_copy(update={"path": f".trash/{note.path}"})
+    index.upsert(trashed, size=len(note.body), mtime=2.0, deleted_at=deleted_at)
 
 
 def test_search_finds_and_ranks(index: SearchIndex) -> None:
     _put(index, _note("01A", "Strong", "postgres postgres postgres backups"))
     _put(index, _note("01B", "Weak", "a long note that mentions postgres once only here"))
     results = index.search("postgres")
-    ids = [r.id for r in results]
-    assert ids == ["01A", "01B"]
+    assert [r.id for r in results] == ["01A", "01B"]
     assert results[0].score >= results[1].score
 
 
@@ -63,8 +68,7 @@ def test_search_snippet_contains_term(index: SearchIndex) -> None:
 def test_search_tag_filter_is_exact_token(index: SearchIndex) -> None:
     _put(index, _note("01A", "Ops note", "deploy postgres", tags=["ops"]))
     _put(index, _note("01B", "Opsec note", "secure postgres", tags=["opsec"]))
-    results = index.search("postgres", tag="ops")
-    assert [r.id for r in results] == ["01A"]
+    assert [r.id for r in index.search("postgres", tag="ops")] == ["01A"]
 
 
 def test_search_empty_and_no_match(index: SearchIndex) -> None:
@@ -73,10 +77,11 @@ def test_search_empty_and_no_match(index: SearchIndex) -> None:
     assert index.search("nonexistentterm") == []
 
 
-def test_idempotency_lookup_live_only(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "body", idem="key-1"))
-    assert index.find_by_idempotency_key("key-1") == "01A"
-    index.mark_trashed("01A", ".trash/01A.md", BASE)
+def test_idempotency_lookup_returns_path_live_only(index: SearchIndex) -> None:
+    note = _note("01A", "Doc", "body", idem="key-1")
+    _put(index, note)
+    assert index.find_by_idempotency_key("key-1") == "01A.md"
+    _trash(index, note)
     assert index.find_by_idempotency_key("key-1") is None
 
 
@@ -86,30 +91,34 @@ def test_duplicate_live_idempotency_key_rejected(index: SearchIndex) -> None:
         _put(index, _note("01B", "B", "body", idem="dup"))
 
 
-def test_get_path_live_then_trashed(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "body"))
-    assert index.get_path("01A") == "01A.md"
-    index.mark_trashed("01A", ".trash/01A.md", BASE)
-    assert index.get_path("01A") is None
-    assert index.get_path("missing") is None
+def test_resolve_handle_by_id_and_path(index: SearchIndex) -> None:
+    note = _note("01A", "Doc", "body")
+    _put(index, note)
+    assert index.resolve_handle("01A") == "01A.md"  # by id alias
+    assert index.resolve_handle("01A.md") == "01A.md"  # by path
+    _trash(index, note)
+    assert index.resolve_handle("01A") is None
+    assert index.resolve_handle("missing") is None
 
 
 def test_trashed_excluded_from_search_and_list(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "postgres"))
-    index.mark_trashed("01A", ".trash/01A.md", BASE)
+    note = _note("01A", "Doc", "postgres")
+    _put(index, note)
+    _trash(index, note)
     assert index.search("postgres") == []
-    live, _ = index.list_live()
-    assert live == []
+    assert index.list_live()[0] == []
     trash, _ = index.list_trash()
     assert [s.id for s in trash] == ["01A"]
+    assert [s.path for s in trash] == [".trash/01A.md"]
 
 
-def test_unmark_trashed_restores_to_live(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "postgres"))
-    index.mark_trashed("01A", ".trash/01A.md", BASE)
-    index.unmark_trashed("01A", "01A.md")
+def test_reupsert_live_restores_from_trash(index: SearchIndex) -> None:
+    note = _note("01A", "Doc", "postgres")
+    _put(index, note)
+    _trash(index, note)
+    _put(index, note)  # back to live at original path
     assert [r.id for r in index.search("postgres")] == ["01A"]
-    assert index.get_path("01A") == "01A.md"
+    assert index.resolve_handle("01A") == "01A.md"
 
 
 def test_list_live_newest_first_and_pagination(index: SearchIndex) -> None:
@@ -128,14 +137,13 @@ def test_list_live_newest_first_and_pagination(index: SearchIndex) -> None:
 def test_list_live_tag_filter(index: SearchIndex) -> None:
     _put(index, _note("01A", "A", "body", tags=["work"], minutes=1))
     _put(index, _note("01B", "B", "body", tags=["home"], minutes=2))
-    live, _ = index.list_live(tag="work")
-    assert [s.id for s in live] == ["01A"]
+    assert [s.id for s in index.list_live(tag="work")[0]] == ["01A"]
 
 
 def test_remove_and_clear(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "postgres"))
+    nid = _put(index, _note("01A", "Doc", "postgres"))
     _put(index, _note("01B", "Doc2", "postgres"))
-    index.remove("01A")
+    index.remove_noteid(nid)
     assert [r.id for r in index.search("postgres")] == ["01B"]
     index.clear()
     assert index.search("postgres") == []
@@ -143,14 +151,30 @@ def test_remove_and_clear(index: SearchIndex) -> None:
 
 
 def test_all_rows_reports_state(index: SearchIndex) -> None:
-    _put(index, _note("01A", "Doc", "body"))
-    index.mark_trashed("01A", ".trash/01A.md", BASE)
+    note = _note("01A", "Doc", "body")
+    _put(index, note)
+    _trash(index, note)
     rows = list(index.all_rows())
     assert len(rows) == 1
-    note_id, path, _size, _mtime, deleted_at = rows[0]
+    _noteid, note_id, path, _size, _mtime, deleted_at = rows[0]
     assert note_id == "01A"
     assert path == ".trash/01A.md"
     assert deleted_at is not None
+
+
+def test_id_less_note_addressed_by_path(index: SearchIndex) -> None:
+    note = Note(
+        id=None,
+        title="No Id",
+        created_at=BASE,
+        updated_at=BASE,
+        body="postgres here",
+        path="folder/no-id.md",
+    )
+    _put(index, note)
+    assert index.resolve_handle("folder/no-id.md") == "folder/no-id.md"
+    assert [s.path for s in index.list_live()[0]] == ["folder/no-id.md"]
+    assert [r.id for r in index.search("postgres")] == [None]
 
 
 def test_invalid_cursor_raises(index: SearchIndex) -> None:

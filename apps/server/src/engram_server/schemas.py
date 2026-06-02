@@ -30,6 +30,12 @@ class ErrorEnvelope(BaseModel):
     error: ErrorBody
 
 
+class RestoreRequest(BaseModel):
+    """Input for ``POST /api/v1/notes/restore``: the trash-relative path to restore."""
+
+    path: str
+
+
 class LinkCreate(BaseModel):
     """Input for ``POST /api/v1/links``: a URL the server should fetch and import."""
 

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 
 from .config import Settings
+from .errors import NoteNotFound
 from .frontmatter import read_note_file
 from .ids import new_ulid
 from .index import SearchIndex
@@ -35,7 +36,7 @@ class ReindexReport:
 class NoteService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.store = VaultStore(settings.vault_path)
+        self.store = VaultStore(settings.vault_path, settings.new_note_dir)
         self.index = SearchIndex(settings.resolved_index_path)
 
     @classmethod
@@ -62,7 +63,7 @@ class NoteService:
                 return self.get(existing), False
         ts = now or datetime.now(UTC)
         note = Note(
-            id=new_ulid(),
+            id=new_ulid() if self.settings.inject_id else None,
             title=data.title,
             created_at=ts,
             updated_at=ts,
@@ -78,39 +79,49 @@ class NoteService:
         self.index.resolve_links()
         return stored, True
 
-    def delete(self, note_id: str, *, now: datetime | None = None) -> None:
-        """Soft-delete: move to trash and mark the index row trashed."""
+    def delete(self, handle: str, *, now: datetime | None = None) -> None:
+        """Soft-delete: move to trash and mark the index row trashed.
+
+        ``handle`` is a note's path or its id alias.
+        """
         ts = now or datetime.now(UTC)
-        note = self.get(note_id)  # raises NoteNotFound if not live
-        dest = self.store.move_to_trash(note_id, ts)
-        trashed = note.model_copy(update={"path": f".trash/{dest.name}"})
-        size, mtime = self.store.stat(dest)
-        self.index.upsert(trashed, size=size, mtime=mtime, deleted_at=ts)
+        note = self.get(handle)  # raises NoteNotFound if not live
+        trash_path = self.store.move_to_trash(note.path, ts)
+        size, mtime = self.store.stat(self.settings.vault_path / trash_path)
+        self.index.move_row(note.path, trash_path, size=size, mtime=mtime, deleted_at=ts)
         self.index.resolve_links()
 
-    def restore(self, note_id: str) -> Note:
-        note = self.store.restore(note_id)  # raises NoteNotInTrash
+    def restore(self, trash_path: str) -> Note:
+        """Restore a trashed note by its trash-relative path (``.trash/<subpath>``)."""
+        note = self.store.restore(trash_path)  # raises NoteNotInTrash
         size, mtime = self.store.stat(self.settings.vault_path / note.path)
-        self.index.upsert(note, size=size, mtime=mtime)
+        self.index.move_row(trash_path, note.path, size=size, mtime=mtime, deleted_at=None)
         self.index.resolve_links()
         return note
 
     def purge_expired_trash(self, *, now: datetime | None = None) -> list[str]:
         ts = now or datetime.now(UTC)
         purged = self.store.purge_expired(self.settings.trash_retention_days, ts)
-        for note_id in purged:
-            self.index.remove(note_id)
+        for trash_path in purged:
+            self.index.remove_path(trash_path)
         return purged
 
     # --- queries ------------------------------------------------------------
 
-    def get(self, note_id: str) -> Note:
-        path = self.index.get_path(note_id)
+    def get(self, handle: str) -> Note:
+        """Read a live note by its path or id alias. Raises ``NoteNotFound``."""
+        path = self.index.resolve_handle(handle)
         if path is not None:
             abs_path = self.settings.vault_path / path
             if abs_path.exists():
                 return read_note_file(abs_path, path)
-        return self.store.read(note_id)  # raises NoteNotFound
+        candidate = self.settings.vault_path / handle
+        if handle.endswith(".md") and candidate.exists():
+            return read_note_file(candidate, handle)
+        by_id = self.store.path_for_id(handle)
+        if by_id is not None:
+            return self.store.read(by_id)
+        raise NoteNotFound(handle)
 
     def list_notes(
         self, *, tag: str | None = None, limit: int = 50, cursor: str | None = None
@@ -125,47 +136,61 @@ class NoteService:
     ) -> tuple[list[NoteSummary], str | None]:
         return self.index.list_trash(limit=limit, cursor=cursor)
 
-    def get_backlinks(self, note_id: str) -> list[NoteSummary]:
-        """Live notes that link to ``note_id``. Raises ``NoteNotFound`` if absent."""
-        self.get(note_id)
-        return self.index.backlinks(note_id)
+    def get_backlinks(self, handle: str) -> list[NoteSummary]:
+        """Live notes that link to ``handle`` (path or id). Raises ``NoteNotFound``."""
+        note = self.get(handle)
+        return self.index.backlinks(note.path)
 
-    def get_outgoing_links(self, note_id: str) -> list[OutgoingLink]:
-        """Outgoing references from ``note_id`` (resolved or dangling)."""
-        self.get(note_id)
-        return self.index.outgoing_links(note_id)
+    def get_outgoing_links(self, handle: str) -> list[OutgoingLink]:
+        """Outgoing references from ``handle`` (path or id), resolved or dangling."""
+        note = self.get(handle)
+        return self.index.outgoing_links(note.path)
 
     # --- maintenance --------------------------------------------------------
 
     def reconcile(self) -> ReconcileReport:
-        """Heal the index against the filesystem using size/mtime comparison."""
+        """Heal the index against the filesystem.
+
+        Notes are matched by their ``id`` alias when present, else by path; a
+        size/mtime/path difference triggers a re-index. Index rows with no
+        matching file are dropped. Identity is the surrogate ``noteid``.
+        """
         indexed = 0
-        seen: set[str] = set()
-        idx_rows = {row[0]: row for row in self.index.all_rows()}
+        rows = list(self.index.all_rows())  # (noteid, id, path, size, mtime, deleted_at)
+        by_id = {row[1]: row for row in rows if row[1] is not None}
+        by_path = {row[2]: row for row in rows}
+        seen: set[int] = set()
+
+        def match(note: Note) -> tuple[int, str | None, str, int, float, str | None] | None:
+            return by_id.get(note.id) if note.id is not None else by_path.get(note.path)
 
         for note in self.store.iter_notes():
-            seen.add(note.id)
-            abs_path = self.settings.vault_path / note.path
-            size, mtime = self.store.stat(abs_path)
-            row = idx_rows.get(note.id)
-            if row is None or row[4] is not None or _changed(row, size, mtime):
-                self.index.upsert(note, size=size, mtime=mtime)
+            size, mtime = self.store.stat(self.settings.vault_path / note.path)
+            row = match(note)
+            if row is not None and row[5] is None and row[2] == note.path and not _changed(
+                row, size, mtime
+            ):
+                seen.add(row[0])
+            else:
+                seen.add(self.index.upsert(note, size=size, mtime=mtime))
                 indexed += 1
 
         for note in self.store.iter_trash():
-            seen.add(note.id)
-            abs_path = self.settings.vault_path / note.path
-            size, mtime = self.store.stat(abs_path)
+            size, mtime = self.store.stat(self.settings.vault_path / note.path)
             deleted_at = datetime.fromtimestamp(mtime, tz=UTC)
-            row = idx_rows.get(note.id)
-            if row is None or row[4] is None or _changed(row, size, mtime):
-                self.index.upsert(note, size=size, mtime=mtime, deleted_at=deleted_at)
+            row = match(note)
+            if row is not None and row[5] is not None and row[2] == note.path and not _changed(
+                row, size, mtime
+            ):
+                seen.add(row[0])
+            else:
+                seen.add(self.index.upsert(note, size=size, mtime=mtime, deleted_at=deleted_at))
                 indexed += 1
 
         removed = 0
-        for note_id in idx_rows:
-            if note_id not in seen:
-                self.index.remove(note_id)
+        for row in rows:
+            if row[0] not in seen:
+                self.index.remove_noteid(row[0])
                 removed += 1
         self.index.resolve_links()
         return ReconcileReport(indexed=indexed, removed=removed)
@@ -190,8 +215,10 @@ class NoteService:
         return ReindexReport(live=live, trash=trash)
 
 
-def _changed(row: tuple[str, str, int, float, str | None], size: int, mtime: float) -> bool:
-    return row[2] != size or abs(row[3] - mtime) > 1e-6
+def _changed(
+    row: tuple[int, str | None, str, int, float, str | None], size: int, mtime: float
+) -> bool:
+    return row[3] != size or abs(row[4] - mtime) > 1e-6
 
 
 class LinkService:

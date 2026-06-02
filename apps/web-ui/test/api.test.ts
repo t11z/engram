@@ -32,16 +32,17 @@ describe("api client", () => {
     expect(res.next_cursor).toBe("c");
   });
 
-  it("gets a note", async () => {
-    const f = mockFetch(200, { id: "1", title: "t", body: "b", path: "p", created_at: "x", updated_at: "y" });
-    const note = await getNote("1");
-    expect(f.mock.calls[0][0]).toBe("/api/v1/notes/1");
+  it("gets a note by path", async () => {
+    const f = mockFetch(200, { id: null, title: "t", body: "b", path: "sub/n.md", created_at: "x", updated_at: "y" });
+    const note = await getNote("sub/n.md");
+    expect(f.mock.calls[0][0]).toBe("/api/v1/notes/by-path/sub/n.md");
     expect(note.body).toBe("b");
   });
 
-  it("deletes a note (204 → void)", async () => {
+  it("deletes a note by path (204 → void)", async () => {
     const f = mockFetch(204);
-    await expect(deleteNote("1")).resolves.toBeUndefined();
+    await expect(deleteNote("sub/n.md")).resolves.toBeUndefined();
+    expect(f.mock.calls[0][0]).toBe("/api/v1/notes/by-path/sub/n.md");
     expect((f.mock.calls[0][1] as RequestInit).method).toBe("DELETE");
   });
 
@@ -51,11 +52,13 @@ describe("api client", () => {
     expect(res.items[0].snippet).toBe("s");
   });
 
-  it("restores via POST", async () => {
-    const f = mockFetch(200, { id: "1", title: "t", body: "b", path: "p", created_at: "x", updated_at: "y" });
-    await restore("1");
-    expect(f.mock.calls[0][0]).toBe("/api/v1/notes/1/restore");
-    expect((f.mock.calls[0][1] as RequestInit).method).toBe("POST");
+  it("restores via POST with the path in the body", async () => {
+    const f = mockFetch(200, { id: null, title: "t", body: "b", path: "n.md", created_at: "x", updated_at: "y" });
+    await restore(".trash/n.md");
+    expect(f.mock.calls[0][0]).toBe("/api/v1/notes/restore");
+    const init = f.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({ path: ".trash/n.md" });
   });
 
   it("clears the token and flags auth on 401", async () => {

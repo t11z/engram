@@ -22,10 +22,10 @@ def save_note(
     tags: list[str] | None = None,
     source_url: str | None = None,
     idempotency_key: str | None = None,
-) -> dict[str, str]:
+) -> dict[str, object]:
     """Save a new note to the vault. Use this to remember something for later: a
     fact, a snippet, a link, a decision. Provide a short `title` and the `body` as
-    Markdown; add `tags` to make it findable. Returns the note's `id`.
+    Markdown; add `tags` to make it findable. Returns the note's `path` (its handle).
     Example: save_note(title='Postgres backup cmd', body='`pg_dump …`', tags=['ops','postgres'])."""
     note, _ = get_service().create(
         NoteCreate(
@@ -36,40 +36,40 @@ def save_note(
             idempotency_key=idempotency_key,
         )
     )
-    return {"id": note.id}
+    return {"path": note.path}
 
 
 def search_notes(query: str, tag: str | None = None, limit: int = 20) -> list[dict[str, object]]:
     """Search the vault by keyword and return the best matches with a snippet and
-    id. Use this before answering from memory, to ground your answer in what the
+    `path`. Use this before answering from memory, to ground your answer in what the
     user actually saved. Example: search_notes(query='postgres backup')."""
     return [
-        {"id": r.id, "title": r.title, "snippet": r.snippet, "score": r.score}
+        {"path": r.path, "title": r.title, "snippet": r.snippet, "score": r.score}
         for r in get_service().search(query, tag=tag, limit=limit)
     ]
 
 
-def read_note(id: str) -> dict[str, object]:
-    """Read one note in full by its `id` (get the id from `search_notes` or
+def read_note(path: str) -> dict[str, object]:
+    """Read one note in full by its `path` (get the path from `search_notes` or
     `list_notes`). Returns the title, tags, and full Markdown body.
-    Example: read_note(id='01J…')."""
-    note = get_service().get(id)
-    return {"id": note.id, "title": note.title, "tags": note.tags, "body": note.body}
+    Example: read_note(path='postgres-backup-cmd.md')."""
+    note = get_service().get(path)
+    return {"path": note.path, "title": note.title, "tags": note.tags, "body": note.body}
 
 
 def list_notes(tag: str | None = None, limit: int = 20) -> list[dict[str, object]]:
-    """List recent notes (newest first) as id + title + tags, optionally filtered
+    """List recent notes (newest first) as path + title + tags, optionally filtered
     by `tag`. Use this to browse what exists when you don't have a search term.
     Example: list_notes(tag='ops', limit=20)."""
     items, _ = get_service().list_notes(tag=tag, limit=limit)
-    return [{"id": s.id, "title": s.title, "tags": s.tags} for s in items]
+    return [{"path": s.path, "title": s.title, "tags": s.tags} for s in items]
 
 
-def delete_note(id: str) -> dict[str, str]:
-    """Move a note to the trash by `id` (soft-delete; it can be restored for 30
-    days). Confirm with the user before deleting. Example: delete_note(id='01J…')."""
-    get_service().delete(id)
-    return {"id": id, "status": "deleted"}
+def delete_note(path: str) -> dict[str, str]:
+    """Move a note to the trash by `path` (soft-delete; it can be restored for 30
+    days). Confirm with the user before deleting. Example: delete_note(path='old-note.md')."""
+    get_service().delete(path)
+    return {"path": path, "status": "deleted"}
 
 
 def build_mcp() -> FastMCP:
