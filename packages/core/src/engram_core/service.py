@@ -16,7 +16,7 @@ from .frontmatter import read_note_file
 from .ids import new_ulid
 from .index import SearchIndex
 from .link_extractor import LinkFetchSettings, fetch_and_extract
-from .models import Note, NoteCreate, NoteSummary, SearchResult
+from .models import Note, NoteCreate, NoteSummary, OutgoingLink, SearchResult
 from .store import VaultStore
 
 
@@ -75,6 +75,7 @@ class NoteService:
         stored = self.store.write(note)
         size, mtime = self.store.stat(self.settings.vault_path / stored.path)
         self.index.upsert(stored, size=size, mtime=mtime)
+        self.index.resolve_links()
         return stored, True
 
     def delete(self, note_id: str, *, now: datetime | None = None) -> None:
@@ -85,11 +86,13 @@ class NoteService:
         trashed = note.model_copy(update={"path": f".trash/{dest.name}"})
         size, mtime = self.store.stat(dest)
         self.index.upsert(trashed, size=size, mtime=mtime, deleted_at=ts)
+        self.index.resolve_links()
 
     def restore(self, note_id: str) -> Note:
         note = self.store.restore(note_id)  # raises NoteNotInTrash
         size, mtime = self.store.stat(self.settings.vault_path / note.path)
         self.index.upsert(note, size=size, mtime=mtime)
+        self.index.resolve_links()
         return note
 
     def purge_expired_trash(self, *, now: datetime | None = None) -> list[str]:
@@ -121,6 +124,16 @@ class NoteService:
         self, *, limit: int = 50, cursor: str | None = None
     ) -> tuple[list[NoteSummary], str | None]:
         return self.index.list_trash(limit=limit, cursor=cursor)
+
+    def get_backlinks(self, note_id: str) -> list[NoteSummary]:
+        """Live notes that link to ``note_id``. Raises ``NoteNotFound`` if absent."""
+        self.get(note_id)
+        return self.index.backlinks(note_id)
+
+    def get_outgoing_links(self, note_id: str) -> list[OutgoingLink]:
+        """Outgoing references from ``note_id`` (resolved or dangling)."""
+        self.get(note_id)
+        return self.index.outgoing_links(note_id)
 
     # --- maintenance --------------------------------------------------------
 
@@ -154,6 +167,7 @@ class NoteService:
             if note_id not in seen:
                 self.index.remove(note_id)
                 removed += 1
+        self.index.resolve_links()
         return ReconcileReport(indexed=indexed, removed=removed)
 
     def reindex(self) -> ReindexReport:
@@ -172,6 +186,7 @@ class NoteService:
                 note, size=size, mtime=mtime, deleted_at=datetime.fromtimestamp(mtime, tz=UTC)
             )
             trash += 1
+        self.index.resolve_links()
         return ReindexReport(live=live, trash=trash)
 
 

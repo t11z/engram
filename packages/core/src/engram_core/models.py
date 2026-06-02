@@ -106,3 +106,16 @@ class SearchResult(NoteSummary):
 
     score: float
     snippet: str
+
+
+class OutgoingLink(BaseModel):
+    """An outgoing reference from a note, with its resolution against the vault.
+
+    ``resolved_path``/``resolved_id`` are ``None`` for a dangling link (a target
+    that matches no note — e.g. a stub for a note not yet written).
+    """
+
+    target: str
+    type: str
+    resolved_path: str | None = None
+    resolved_id: str | None = None
