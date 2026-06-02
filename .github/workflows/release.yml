@@ -83,14 +83,34 @@ jobs:
           mkdir -p artifacts
           (cd apps/extension/dist/chrome && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-chrome-${TAG}.zip" .)
           (cd apps/extension/dist/firefox && zip -r "$GITHUB_WORKSPACE/artifacts/engram-extension-firefox-${TAG}.zip" .)
-      # GitHub Releases are the single source of truth for release notes:
-      # generate_release_notes builds the "What's Changed" list from the merged
-      # PRs in the tag's range. There is no hand-maintained changelog to extract.
+      # GitHub Releases are the single source of truth for release notes: the
+      # "What's Changed" list is generated from the merged PRs in the tag's
+      # range. We generate it ourselves and pass it as an explicit body rather
+      # than using action-gh-release's generate_release_notes: when a release
+      # already exists with a body (e.g. a draft pre-created in the UI with
+      # "Generate release notes", or a workflow_dispatch re-run), GitHub
+      # pre-pends that existing body to the freshly generated notes, duplicating
+      # the list. An explicit body overwrites the existing one, so the notes
+      # appear exactly once.
+      - name: Generate release notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          delim="NOTES_$(date +%s)_${RANDOM}"
+          notes=$(gh api -X POST \
+            "repos/${{ github.repository }}/releases/generate-notes" \
+            -f tag_name="$TAG" --jq .body)
+          {
+            echo "body<<$delim"
+            echo "$notes"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.TAG }}
           files: ${{ github.event_name == 'push' && 'artifacts/*.zip' || '' }}
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.body }}
 
   # Opt-in store publishing. Runs only when the repo variable
   # PUBLISH_EXTENSION == 'true', so tagging a release never publishes by
