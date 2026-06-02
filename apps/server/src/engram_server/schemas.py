@@ -36,6 +36,29 @@ class RestoreRequest(BaseModel):
     path: str
 
 
+class NoteUpdate(BaseModel):
+    """Body for ``PUT /api/v1/notes/by-path/{path}``: fields to replace (all optional)."""
+
+    title: str | None = None
+    body: str | None = None
+    tags: list[str] | None = None
+
+
+class AppendRequest(BaseModel):
+    """Body for ``POST /api/v1/notes/append``."""
+
+    path: str
+    text: str
+
+
+class PatchSectionRequest(BaseModel):
+    """Body for ``POST /api/v1/notes/patch-section``."""
+
+    path: str
+    heading: str
+    content: str
+
+
 class LinkCreate(BaseModel):
     """Input for ``POST /api/v1/links``: a URL the server should fetch and import."""
 

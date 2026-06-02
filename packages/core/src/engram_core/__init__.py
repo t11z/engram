@@ -17,6 +17,7 @@ from .errors import (
     LinkTooLarge,
     LinkUnreachable,
     NoteAlreadyExists,
+    NoteConflict,
     NoteNotFound,
     NoteNotInTrash,
     UnsupportedContentType,
@@ -24,7 +25,18 @@ from .errors import (
 )
 from .link_extractor import ExtractedArticle, LinkFetchSettings, fetch_and_extract
 from .links import ParsedLink, extract_inline_tags, extract_links
-from .models import Note, NoteCreate, NoteMeta, NoteSummary, OutgoingLink, SearchResult
+from .models import (
+    GraphEdge,
+    GraphNode,
+    GraphView,
+    Note,
+    NoteCreate,
+    NoteMeta,
+    NoteSummary,
+    OutgoingLink,
+    SearchResult,
+    TagCount,
+)
 from .service import LinkService, NoteService, ReconcileReport, ReindexReport
 from .watcher import VaultWatcher
 
@@ -34,6 +46,9 @@ __all__ = [
     "BlockedHost",
     "EngramError",
     "ExtractedArticle",
+    "GraphEdge",
+    "GraphNode",
+    "GraphView",
     "IndexUnavailable",
     "InvalidNote",
     "LinkExtractionFailed",
@@ -45,6 +60,7 @@ __all__ = [
     "LinkUnreachable",
     "Note",
     "NoteAlreadyExists",
+    "NoteConflict",
     "NoteCreate",
     "NoteMeta",
     "NoteNotFound",
@@ -57,6 +73,7 @@ __all__ = [
     "ReindexReport",
     "SearchResult",
     "Settings",
+    "TagCount",
     "UnsupportedContentType",
     "VaultError",
     "VaultWatcher",
