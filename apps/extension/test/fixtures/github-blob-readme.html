@@ -1,0 +1,39 @@
+<!-- outcome: SUBSTANTIVE -- a GitHub blob view where the rendered README IS in the DOM (markdown-body),
+     alongside a thin, link-heavy "About" sidebar that Readability is prone to grab. Coverage makes the
+     pipeline reject that small fragment and prefer the de-chromed body, recovering the actual README
+     instead of saving a link-only stub. Trimmed/simplified from github.com/.../blob/main/README.md. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>engram/README.md at main · t11z/engram</title>
+  </head>
+  <body>
+    <header role="banner">
+      <nav><a href="/">GitHub</a> <a href="/pulls">Pull requests</a> <a href="/issues">Issues</a> <a href="/marketplace">Marketplace</a></nav>
+    </header>
+    <main>
+      <aside aria-label="About">
+        <p>A self-hosted Markdown knowledge vault — see <a href="https://t11z.github.io/engram/">the docs</a>.</p>
+        <a href="https://t11z.github.io/engram/">t11z.github.io/engram</a>
+      </aside>
+      <article class="markdown-body">
+        <h1>Engram</h1>
+        <p>
+          Engram is a self-hosted Markdown knowledge vault. Your notes are ordinary files on disk
+          that you can read, search, back up, and move with everyday tools, whether or not the
+          server happens to be running at the time.
+        </p>
+        <h2>Why plain files</h2>
+        <p>
+          Because the storage format is just text, the data outlives the tool that produced it. A
+          note written today can still be opened decades from now, long after this particular
+          application has been forgotten, which is exactly what a durable archive needs.
+        </p>
+      </article>
+    </main>
+    <footer role="contentinfo">
+      <nav><a href="/about">About</a> <a href="/pricing">Pricing</a> <a href="/contact">Contact</a></nav>
+    </footer>
+  </body>
+</html>
