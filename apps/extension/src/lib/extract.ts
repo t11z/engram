@@ -7,58 +7,78 @@ import type { ExtractResponse } from "@/lib/messaging";
  * Pure extraction pipeline, isolated from the WXT content-script wrapper and the
  * `chrome.*` API so it can be unit-tested under jsdom against real Readability.
  *
- * The flow is: Readability first; if its output is not *substantive* (see
- * {@link isSubstantive}) fall back to a de-chromed copy of the body; if neither
- * yields real content, fail honestly instead of saving a link-only stub note.
+ * The flow is: Readability first; if its output is only a small fragment of the
+ * page's actual content, prefer a de-chromed copy of the body instead; if neither
+ * yields real content, fail honestly rather than save a link-only stub note.
  */
 
 /**
- * Tuning knobs for {@link isSubstantive}. Defaults are deliberately lenient so we
- * reject obvious stubs (a repo description that is mostly a link, a nav listing)
- * without dropping thin-but-real articles. They are exported so tests can pin the
- * boundary and future contributors can retune against the fixture corpus.
+ * Tuning knobs for {@link isSubstantive}. The guard deliberately does **not**
+ * reject content merely for being short: a definition, a quote, a short note, or
+ * a code snippet is valid even at a handful of words. It rejects only content
+ * that is empty, link/nav-dominated, or a small fragment of a much larger body
+ * (which signals we missed the real content). All knobs are exported so tests
+ * can pin the boundaries and contributors can retune against the fixture corpus.
  */
 export interface SubstantiveOptions {
-  /** Minimum visible (non-link, non-markup) reading characters. */
-  minTextChars?: number;
-  /** Minimum number of words in the visible reading text. */
-  minWords?: number;
+  /** Length at which content is accepted on its own, regardless of coverage. */
+  minStrongChars?: number;
+  /** Floor below which content is treated as effectively empty. */
+  minAbsoluteChars?: number;
   /** Maximum share of visible text that may be link anchor text (0..1). */
   maxLinkDensity?: number;
+  /** For short content, the minimum share of the page's content it must cover. */
+  minCoverage?: number;
 }
 
-/** ~two sentences. A GitHub repo description is ~50-150 chars and falls below. */
-export const DEFAULT_MIN_TEXT_CHARS = 280;
-/** A short paragraph; below this it is almost certainly a label/nav/description. */
-export const DEFAULT_MIN_WORDS = 50;
+/** ~two sentences: clearly a real body, accepted without a coverage check. */
+export const DEFAULT_MIN_STRONG_CHARS = 280;
+/** Below this there is essentially nothing to clip (≈ a handful of words). */
+export const DEFAULT_MIN_ABSOLUTE_CHARS = 40;
 /** Above half link-text is a nav/listing/stub, not prose. */
 export const DEFAULT_MAX_LINK_DENSITY = 0.5;
+/** A short clip is genuine when it covers at least this share of page content. */
+export const DEFAULT_MIN_COVERAGE = 0.5;
 
 /**
  * Decide whether extracted Markdown is real content versus a stub/link/nav.
  *
- * Computed from the Markdown (not the HTML) because the Markdown is exactly what
- * we would save, and its link syntax is trivially parseable without a DOM. The
- * decision is the AND of three independent, cheap signals so a rejection is easy
- * to reason about. No site-specific signals — this stays generic.
+ * Computed from the Markdown (its link syntax is trivially parseable without a
+ * DOM). The decision, in order: reject the effectively-empty; reject the
+ * link-dominated; accept anything substantial on its own; otherwise accept short
+ * content only when it covers a meaningful share of `pageContentChars` — the
+ * length of the page's de-chromed content. That last rule is what lets a short
+ * but genuine clip through (it *is* the page) while rejecting a short fragment of
+ * a much larger body (we missed the bulk). No site-specific signals.
+ *
+ * @param pageContentChars Length of the page's de-chromed content text. When
+ *   omitted, the Markdown is treated as the whole content (coverage = 1).
  */
-export function isSubstantive(markdown: string, opts: SubstantiveOptions = {}): boolean {
-  const minTextChars = opts.minTextChars ?? DEFAULT_MIN_TEXT_CHARS;
-  const minWords = opts.minWords ?? DEFAULT_MIN_WORDS;
+export function isSubstantive(
+  markdown: string,
+  pageContentChars?: number,
+  opts: SubstantiveOptions = {},
+): boolean {
+  const minStrong = opts.minStrongChars ?? DEFAULT_MIN_STRONG_CHARS;
+  const minAbsolute = opts.minAbsoluteChars ?? DEFAULT_MIN_ABSOLUTE_CHARS;
   const maxLinkDensity = opts.maxLinkDensity ?? DEFAULT_MAX_LINK_DENSITY;
+  const minCoverage = opts.minCoverage ?? DEFAULT_MIN_COVERAGE;
 
   const { text, linkText } = stripMarkup(markdown);
   const textChars = text.length;
-  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-  const linkDensity = textChars > 0 ? linkText.length / textChars : 0;
 
-  return textChars >= minTextChars && words >= minWords && linkDensity <= maxLinkDensity;
+  if (textChars < minAbsolute) return false;
+  if (linkText.length / textChars > maxLinkDensity) return false;
+  if (textChars >= minStrong) return true;
+
+  const denominator = Math.max(pageContentChars ?? textChars, 1);
+  return textChars / denominator >= minCoverage;
 }
 
 /**
  * Reduce Markdown to its visible reading text, and separately collect the text
- * that sat inside links, so callers can measure length, word count, and link
- * density. URLs and structural markup are dropped; code and prose text are kept.
+ * that sat inside links, so callers can measure length and link density. URLs and
+ * structural markup are dropped; code and prose text are kept.
  */
 function stripMarkup(markdown: string): { text: string; linkText: string } {
   let linkText = "";
@@ -91,10 +111,10 @@ function collapse(s: string): string {
 }
 
 /**
- * Build the fallback HTML when Readability is missing or too thin: a copy of the
- * document with obvious page chrome removed, narrowed to the main content region
- * if one is present. Pruning the nav/footer plus the link-density gate in
- * {@link isSubstantive} together keep boilerplate from passing as content.
+ * Build the fallback HTML: a copy of the document with obvious page chrome
+ * removed, narrowed to the main content region if one is present. Its text also
+ * serves as the "page content" denominator for coverage, so that surrounding
+ * nav/footer chrome never penalizes a short but genuine clip.
  */
 function pickFallbackHtml(doc: Document): string {
   const clone = doc.cloneNode(true) as Document;
@@ -134,19 +154,23 @@ function pickTitle(doc: Document, article: ParsedArticle | null): string {
 /** Run the full extraction pipeline against a document. DOM in, response out. */
 export function extractFromDocument(doc: Document): ExtractResponse {
   try {
+    // The de-chromed body is both the fallback candidate and the coverage
+    // denominator (how much of the page's content a candidate captured).
+    const fallbackMarkdown = htmlToMarkdown(pickFallbackHtml(doc));
+    const contentChars = stripMarkup(fallbackMarkdown).text.length;
+
     // Readability mutates the document it is given, so hand it a throwaway clone
-    // and keep `doc` pristine for the fallback path.
+    // and keep `doc` pristine.
     const article = new Readability(doc.cloneNode(true) as Document).parse() as ParsedArticle | null;
 
     if (article?.content) {
       const markdown = htmlToMarkdown(article.content);
-      if (markdown && isSubstantive(markdown)) {
+      if (markdown && isSubstantive(markdown, contentChars)) {
         return { ok: true, title: pickTitle(doc, article), markdown };
       }
     }
 
-    const fallbackMarkdown = htmlToMarkdown(pickFallbackHtml(doc));
-    if (fallbackMarkdown && isSubstantive(fallbackMarkdown)) {
+    if (fallbackMarkdown && isSubstantive(fallbackMarkdown, contentChars)) {
       return { ok: true, title: pickTitle(doc, article), markdown: fallbackMarkdown };
     }
 

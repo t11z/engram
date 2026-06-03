@@ -37,12 +37,14 @@ type FixtureCase = SubstantiveCase | RejectedCase;
 const cases: FixtureCase[] = [
   { file: "article-blog-post.html", outcome: "substantive", minLen: 400, contains: "the data outlives the tool" },
   { file: "docs-page.html", outcome: "substantive", minLen: 300, contains: "shared secret" },
-  { file: "article-short-but-real.html", outcome: "substantive", minLen: 200, contains: "corruption bug" },
-  { file: "github-blob-readme.html", outcome: "rejected" },
-  { file: "readability-thin.html", outcome: "rejected" },
+  // Short content that is essentially the whole page: accepted via coverage,
+  // even though it falls well below the strong-length bar.
+  { file: "article-short-but-real.html", outcome: "substantive", minLen: 100, contains: "only a hope" },
+  // The rendered README is in the DOM next to a thin link sidebar; coverage makes
+  // us recover the README via the body rather than save the sidebar fragment.
+  { file: "github-blob-readme.html", outcome: "substantive", minLen: 300, contains: "outlives the tool" },
   { file: "link-heavy-listing.html", outcome: "rejected" },
   { file: "js-shell-empty-body.html", outcome: "rejected" },
-  { file: "paywall-stub.html", outcome: "rejected" },
 ];
 
 describe("extractFromDocument (fixture corpus)", () => {
@@ -72,7 +74,9 @@ describe("isSubstantive", () => {
     "can still be opened, searched, and copied decades from now even after the original " +
     "application that produced it has long since disappeared.";
 
-  it("accepts a real paragraph of prose", () => {
+  const shortSentence = "A backup you have never restored is only a hope, not a guarantee.";
+
+  it("accepts a long paragraph on its own (strong length)", () => {
     expect(isSubstantive(prose)).toBe(true);
   });
 
@@ -81,31 +85,33 @@ describe("isSubstantive", () => {
     expect(isSubstantive(md)).toBe(true);
   });
 
+  it("accepts short content that is essentially the whole page (coverage)", () => {
+    // Short, but it covers the page's content — a valid clip, not a stub.
+    expect(isSubstantive(shortSentence, shortSentence.length)).toBe(true);
+  });
+
+  it("rejects short content that is only a small fragment of a larger page", () => {
+    // Same short sentence, but the page has far more content we did not capture.
+    expect(isSubstantive(shortSentence, 5000)).toBe(false);
+  });
+
   it("rejects a bare link", () => {
     expect(isSubstantive("[GitHub](https://github.com/t11z/engram)")).toBe(false);
   });
 
-  it("rejects a nav-only link list", () => {
-    expect(isSubstantive("- [Home](/)\n- [About](/about)\n- [Contact](/contact)")).toBe(false);
+  it("rejects a nav-only link list regardless of length", () => {
+    const nav = Array.from({ length: 12 }, (_v, i) => `- [Section ${i}](/s/${i})`).join("\n");
+    expect(isSubstantive(nav, nav.length)).toBe(false);
   });
 
-  it("rejects empty and whitespace-only input", () => {
+  it("rejects empty and near-empty input", () => {
     expect(isSubstantive("")).toBe(false);
     expect(isSubstantive("   \n\n  ")).toBe(false);
-  });
-
-  it("rejects content dominated by link text even when long", () => {
-    const linkSoup = Array.from({ length: 12 }, (_v, i) => `[A reasonably long link title number ${i}](https://example.com/${i})`).join(" ");
-    expect(isSubstantive(linkSoup)).toBe(false);
-  });
-
-  it("rejects text below the word/length floor", () => {
-    expect(isSubstantive("A short label with only a handful of words here.")).toBe(false);
+    expect(isSubstantive("Too short.")).toBe(false);
   });
 
   it("honors custom thresholds", () => {
-    const short = "Just under twenty words of text that would normally be rejected by the default floor entirely.";
-    expect(isSubstantive(short)).toBe(false);
-    expect(isSubstantive(short, { minTextChars: 10, minWords: 5 })).toBe(true);
+    expect(isSubstantive(shortSentence, 5000)).toBe(false);
+    expect(isSubstantive(shortSentence, 5000, { minCoverage: 0 })).toBe(true);
   });
 });

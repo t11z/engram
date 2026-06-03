@@ -24,11 +24,13 @@ Extraction logic lives in `src/lib/extract.ts` (a pure `Document → ExtractResp
 module, so it is unit-testable under jsdom without the WXT wrapper); the
 `extractor.content.ts` content script is just the messaging adapter. The pipeline
 tries Readability first, falls back to a de-chromed copy of the body, and only then
-gives up. Each candidate must pass `isSubstantive()` — a generic heuristic
-(visible-text length, word count, link density; thresholds exported and tunable) —
-so the extension **fails honestly with an error badge instead of silently saving a
-link-only stub note** on JS-rendered/paywalled pages. Keep the heuristic generic; no
-per-site logic here.
+gives up. Each candidate must pass `isSubstantive()` — a generic heuristic that
+rejects only the empty, the link/nav-dominated, and small fragments of a much
+larger body (a low **coverage** of the page's de-chromed content). It deliberately
+does **not** reject content for being short: a definition, quote, or short note is
+valid, so short content passes when it covers the page. When nothing qualifies the
+extension **fails honestly with an error badge instead of silently saving a
+link-only stub note**. Keep the heuristic generic; no per-site logic here.
 
 Tests run real Readability against a labeled HTML-fixture corpus in
 `test/fixtures/`, asserting outcome class (substantive vs. correctly-rejected), not
