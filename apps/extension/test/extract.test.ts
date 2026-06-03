@@ -43,6 +43,10 @@ const cases: FixtureCase[] = [
   // The rendered README is in the DOM next to a thin link sidebar; coverage makes
   // us recover the README via the body rather than save the sidebar fragment.
   { file: "github-blob-readme.html", outcome: "substantive", minLen: 300, contains: "outlives the tool" },
+  // React-shell blob view: the rendered README is absent from the visible DOM and
+  // only present in the embedded JSON payload. Recovering it from there is what
+  // keeps this from being saved as a repo-navigation stub (issue #85).
+  { file: "github-blob-shell.html", outcome: "substantive", minLen: 300, contains: "outlives the tool" },
   { file: "link-heavy-listing.html", outcome: "rejected" },
   { file: "js-shell-empty-body.html", outcome: "rejected" },
 ];

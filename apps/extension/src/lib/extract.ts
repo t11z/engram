@@ -7,9 +7,11 @@ import type { ExtractResponse } from "@/lib/messaging";
  * Pure extraction pipeline, isolated from the WXT content-script wrapper and the
  * `chrome.*` API so it can be unit-tested under jsdom against real Readability.
  *
- * The flow is: Readability first; if its output is only a small fragment of the
- * page's actual content, prefer a de-chromed copy of the body instead; if neither
- * yields real content, fail honestly rather than save a link-only stub note.
+ * The flow is: recover a rendered article shipped in an embedded JSON payload
+ * (GitHub file views, see {@link extractEmbeddedArticleHtml}); else Readability;
+ * if Readability's output is only a small fragment of the page's actual content,
+ * prefer a de-chromed copy of the body instead; if nothing yields real content,
+ * fail honestly rather than save a link-only stub note.
  */
 
 /**
@@ -142,6 +144,64 @@ function firstWithText(root: Document, selector: string): Element | null {
   return null;
 }
 
+/**
+ * Recover a rendered article that the page ships as HTML inside an embedded JSON
+ * payload rather than (reliably) in the live DOM.
+ *
+ * GitHub's file ("blob") views are the motivating case and the "raw-file
+ * special-case" that the substantive-content guard was always going to need: the
+ * rendered README lives in a `…embeddedData` script as a `richText` field, while
+ * the visible DOM is a React shell. Before hydration — Turbo navigation, a slow
+ * load, GitHub's "There was an error while loading" placeholder — de-chroming and
+ * Readability can only reduce that shell to repo navigation, which then slips past
+ * the guard as a link-only stub. Reading the payload yields the full article in
+ * every load state.
+ *
+ * Deliberately keyed on the embedded-payload *shape* (an `embeddedData` JSON
+ * island carrying a `richText` HTML string), not on prose heuristics or a URL
+ * match, so it works in tests without a configured location and stays out of the
+ * generic guard. Returns the rendered HTML, or `null` when no such payload exists.
+ */
+function extractEmbeddedArticleHtml(doc: Document): string | null {
+  for (const script of doc.querySelectorAll('script[type="application/json"]')) {
+    if (!(script.getAttribute("data-target") ?? "").endsWith("embeddedData")) continue;
+    let data: unknown;
+    try {
+      data = JSON.parse(script.textContent ?? "");
+    } catch {
+      continue;
+    }
+    const html = findRichTextHtml(data);
+    if (html) return html;
+  }
+  return null;
+}
+
+/**
+ * Depth-first search of a parsed JSON value for a `richText` property whose value
+ * is an HTML string (the rendered article). GitHub nests it under a route key
+ * whose name churns across releases, so we search by key rather than a fixed path.
+ */
+function findRichTextHtml(value: unknown): string | null {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findRichTextHtml(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const rich = obj.richText;
+    if (typeof rich === "string" && rich.trimStart().startsWith("<")) return rich;
+    for (const nested of Object.values(obj)) {
+      const found = findRichTextHtml(nested);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 interface ParsedArticle {
   title?: string | null;
   content?: string | null;
@@ -154,6 +214,17 @@ function pickTitle(doc: Document, article: ParsedArticle | null): string {
 /** Run the full extraction pipeline against a document. DOM in, response out. */
 export function extractFromDocument(doc: Document): ExtractResponse {
   try {
+    // A rendered article shipped in an embedded JSON payload (GitHub blob views)
+    // is the authoritative content and is present regardless of hydration, so it
+    // takes priority over the DOM-scraping path below.
+    const embeddedHtml = extractEmbeddedArticleHtml(doc);
+    if (embeddedHtml) {
+      const markdown = htmlToMarkdown(embeddedHtml);
+      if (markdown && isSubstantive(markdown)) {
+        return { ok: true, title: pickTitle(doc, null), markdown };
+      }
+    }
+
     // The de-chromed body is both the fallback candidate and the coverage
     // denominator (how much of the page's content a candidate captured).
     const fallbackMarkdown = htmlToMarkdown(pickFallbackHtml(doc));

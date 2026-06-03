@@ -23,14 +23,27 @@ in [`/docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md).
 Extraction logic lives in `src/lib/extract.ts` (a pure `Document → ExtractResponse`
 module, so it is unit-testable under jsdom without the WXT wrapper); the
 `extractor.content.ts` content script is just the messaging adapter. The pipeline
-tries Readability first, falls back to a de-chromed copy of the body, and only then
-gives up. Each candidate must pass `isSubstantive()` — a generic heuristic that
-rejects only the empty, the link/nav-dominated, and small fragments of a much
-larger body (a low **coverage** of the page's de-chromed content). It deliberately
-does **not** reject content for being short: a definition, quote, or short note is
-valid, so short content passes when it covers the page. When nothing qualifies the
-extension **fails honestly with an error badge instead of silently saving a
-link-only stub note**. Keep the heuristic generic; no per-site logic here.
+first recovers a rendered article that the page ships as HTML inside an embedded
+JSON payload (see below), then tries Readability, falls back to a de-chromed copy
+of the body, and only then gives up. Each candidate must pass `isSubstantive()` —
+a generic heuristic that rejects only the empty, the link/nav-dominated, and small
+fragments of a much larger body (a low **coverage** of the page's de-chromed
+content). It deliberately does **not** reject content for being short: a
+definition, quote, or short note is valid, so short content passes when it covers
+the page. When nothing qualifies the extension **fails honestly with an error badge
+instead of silently saving a link-only stub note**. Keep the `isSubstantive`
+heuristic generic; no per-site prose tuning there.
+
+**Embedded-payload recovery (the one sanctioned per-site escape hatch).**
+JS-rendered file views — GitHub's `…/blob/…` pages are the motivating case — ship
+the rendered article as HTML inside an `…embeddedData` JSON island (`richText`),
+while the visible DOM is a React shell. Before hydration (Turbo navigation, a slow
+load, GitHub's "error while loading" placeholder) de-chroming + Readability can
+only reduce that shell to repo navigation, which then slips past the guard as a
+link-only stub. `extractEmbeddedArticleHtml()` recovers the real article from the
+payload first, so it works in every load state. It is keyed on the payload *shape*
+(an `embeddedData` script carrying a `richText` HTML string), not on a URL or prose
+heuristics, so it stays testable and self-contained.
 
 Tests run real Readability against a labeled HTML-fixture corpus in
 `test/fixtures/`, asserting outcome class (substantive vs. correctly-rejected), not
