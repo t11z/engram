@@ -131,9 +131,14 @@ jobs:
   # apps/extension/store/README.md.
   publish-extension:
     needs: release
+    # Gate on github.event.inputs.* (always stringified) rather than the typed
+    # inputs.* context: workflow_dispatch boolean inputs evaluate inconsistently
+    # via inputs.* and can be falsy even when ticked (actions/runner#1483), which
+    # skipped this job on manual runs. A ticked checkbox is the string 'true'.
     if: >-
       ${{ (github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true')
-          || (github.event_name == 'workflow_dispatch' && (inputs.chrome || inputs.firefox)) }}
+          || (github.event_name == 'workflow_dispatch'
+              && (github.event.inputs.chrome == 'true' || github.event.inputs.firefox == 'true')) }}
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -190,7 +195,7 @@ jobs:
       # its input is ticked. `wxt submit` only contacts the store(s) whose
       # --*-zip flags are passed.
       - name: Submit to Chrome Web Store
-        if: ${{ github.event_name == 'push' || inputs.chrome }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.chrome == 'true' }}
         working-directory: apps/extension
         run: pnpm exec wxt submit --chrome-zip "$CHROME_ZIP"
         env:
@@ -199,7 +204,7 @@ jobs:
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
       - name: Submit to Firefox AMO
-        if: ${{ github.event_name == 'push' || inputs.firefox }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.firefox == 'true' }}
         working-directory: apps/extension
         run: |
           pnpm exec wxt submit \
