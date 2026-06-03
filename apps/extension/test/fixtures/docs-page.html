@@ -1,0 +1,30 @@
+<!-- outcome: SUBSTANTIVE -- documentation page with headings, prose, and a code block. Trimmed sample. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Configuring the server — Engram docs</title>
+  </head>
+  <body>
+    <header><nav><a href="/docs">Docs</a> <a href="/docs/api">API</a></nav></header>
+    <aside><a href="#install">Install</a> <a href="#run">Run</a> <a href="#auth">Auth</a></aside>
+    <main>
+      <h1>Configuring the server</h1>
+      <p>
+        The server reads its configuration from environment variables so that the same binary can
+        run unchanged in development and in production. Every option has a sensible default except
+        the vault path and the authentication token, which you must set explicitly before the
+        server will accept any request. The sections below describe the variables in the order you
+        will usually need them.
+      </p>
+      <h2 id="run">Running against a vault</h2>
+      <p>
+        Point the server at a directory of Markdown files and give it a token, then start it. The
+        token is a shared secret that the browser extension and any other client must present on
+        every call, so choose something that is hard to guess and keep it out of your shell history.
+      </p>
+      <pre><code>ENGRAM_VAULT_PATH=./vault ENGRAM_AUTH_TOKEN=dev uv run engram</code></pre>
+    </main>
+    <footer><a href="/privacy">Privacy</a></footer>
+  </body>
+</html>

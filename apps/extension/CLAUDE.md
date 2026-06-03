@@ -18,6 +18,24 @@ in [`/docs/IMPLEMENTATION_PLAN.md`](../../docs/IMPLEMENTATION_PLAN.md).
   Readability → Turndown, then POSTs to `/api/v1/notes` with `source_url` and an
   `idempotency_key`.
 
+## Extraction & the substantive-content guard
+
+Extraction logic lives in `src/lib/extract.ts` (a pure `Document → ExtractResponse`
+module, so it is unit-testable under jsdom without the WXT wrapper); the
+`extractor.content.ts` content script is just the messaging adapter. The pipeline
+tries Readability first, falls back to a de-chromed copy of the body, and only then
+gives up. Each candidate must pass `isSubstantive()` — a generic heuristic
+(visible-text length, word count, link density; thresholds exported and tunable) —
+so the extension **fails honestly with an error badge instead of silently saving a
+link-only stub note** on JS-rendered/paywalled pages. Keep the heuristic generic; no
+per-site logic here.
+
+Tests run real Readability against a labeled HTML-fixture corpus in
+`test/fixtures/`, asserting outcome class (substantive vs. correctly-rejected), not
+exact Markdown. **When a page is reported as mis-clipped, trim it into a new fixture,
+label its expected outcome, then tune `extract.ts` until it passes without breaking
+the others** — the corpus is the regression net.
+
 ## Permission policy
 
 Minimum surface, and **justify any expansion in the PR and the store listing**:

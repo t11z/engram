@@ -1,0 +1,30 @@
+<!-- outcome: REJECTED_STUB -- models the reported bug: a GitHub blob view where the rendered file
+     content was not present as extractable prose at clip time, leaving only chrome plus a thin,
+     link-heavy repository description. Trimmed/simplified from github.com/.../blob/main/README.md. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>engram/README.md at main · t11z/engram</title>
+  </head>
+  <body>
+    <header role="banner">
+      <nav><a href="/">GitHub</a> <a href="/pulls">Pull requests</a> <a href="/issues">Issues</a></nav>
+    </header>
+    <div id="repository-container-header">
+      <a href="/t11z">t11z</a> / <a href="/t11z/engram">engram</a>
+      <nav><a href="/t11z/engram">Code</a> <a href="/t11z/engram/issues">Issues</a> <a href="/t11z/engram/pulls">Pull requests</a></nav>
+    </div>
+    <main>
+      <div class="repository-meta">
+        <p>A self-hosted Markdown knowledge vault — see <a href="https://t11z.github.io/engram/">the docs</a>.</p>
+      </div>
+      <!-- The rendered README is painted into a virtualized blob view by client JS and is not present
+           as extractable text in the DOM the content script observes. -->
+      <div id="read-only-cursor-text-area" data-empty="true"></div>
+    </main>
+    <footer role="contentinfo">
+      <nav><a href="/about">About</a> <a href="/pricing">Pricing</a> <a href="/contact">Contact</a></nav>
+    </footer>
+  </body>
+</html>
