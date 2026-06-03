@@ -132,17 +132,40 @@ jobs:
       - name: Build store-ready zips (Chrome + Firefox + sources)
         run: |
           # Stamp the tag version into the Chrome zip, Firefox zip, and sources zip.
+          # The `zip` script is `wxt zip && wxt zip -b firefox`, so this single
+          # invocation already emits the Chrome zip plus the Firefox extension and
+          # sources zips. Do not add a second `zip -b firefox`: pnpm appends the
+          # flag a second time, WXT then builds the target list `firefox,firefox`
+          # and writes a stray `…-firefox,firefox.zip`, which breaks path
+          # resolution below.
           export ENGRAM_EXTENSION_VERSION="${TAG#v}"
           pnpm --filter extension zip
-          pnpm --filter extension zip -b firefox
       - name: Resolve artifact paths
+        working-directory: apps/extension/dist
         run: |
-          cd apps/extension/dist
-          {
-            echo "CHROME_ZIP=$PWD/$(ls *chrome*.zip)"
-            echo "FIREFOX_ZIP=$PWD/$(ls *firefox*.zip | grep -v sources)"
-            echo "SOURCES_ZIP=$PWD/$(ls *sources*.zip)"
-          } >> "$GITHUB_ENV"
+          set -euo pipefail
+          shopt -s nullglob
+          # Require exactly one match per artifact and write absolute paths to
+          # $GITHUB_ENV one variable per line. A glob that matched several files
+          # would otherwise produce a multi-line value the runner rejects with
+          # "Invalid format" — fail loudly with the candidates instead.
+          require_one() {
+            local var=$1; shift
+            if [ "$#" -ne 1 ]; then
+              echo "::error::expected exactly one ${var} artifact in $(pwd), found $#: $*"
+              exit 1
+            fi
+            printf '%s=%s\n' "$var" "$PWD/$1" >> "$GITHUB_ENV"
+          }
+          chrome=( *chrome*.zip )
+          sources=( *sources*.zip )
+          firefox=()
+          for z in *firefox*.zip; do
+            case "$z" in *sources*) ;; *) firefox+=("$z") ;; esac
+          done
+          require_one CHROME_ZIP "${chrome[@]}"
+          require_one FIREFOX_ZIP "${firefox[@]}"
+          require_one SOURCES_ZIP "${sources[@]}"
       - name: Submit to Chrome Web Store and Firefox AMO
         working-directory: apps/extension
         run: |
