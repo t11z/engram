@@ -79,3 +79,17 @@ and AMO API keys. The **first** Chrome submission must be done manually in the
 dashboard; the API can only publish updates to an existing item.
 
 Then set `PUBLISH_EXTENSION=true` and push a `v*.*.*` tag.
+
+### Re-submitting a single store
+
+Each store is submitted in its own step, so a transient outage in one (e.g. a
+`503` from the Chrome Web Store upload API) does not affect the other. To retry
+without re-submitting the store that already succeeded — the stores reject an
+identical version as a duplicate — run the workflow manually:
+
+> Actions → **Release** → **Run workflow** → pick the existing `tag` and tick
+> `chrome` and/or `firefox`.
+
+This uses the same CI secrets, builds the store zips for that tag, and submits
+only the ticked store(s). Leaving both unticked just regenerates the release
+notes (the default `workflow_dispatch` behaviour).

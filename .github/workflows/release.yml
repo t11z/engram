@@ -4,15 +4,26 @@ on:
   push:
     tags:
       - "v*.*.*"
-  # Manual re-run that regenerates the auto-generated release notes for an
-  # existing tag from its merged PRs. Updates only the release body — it does not
-  # rebuild the Docker image, re-upload assets, or submit to the extension stores.
+  # Manual re-run for an existing tag. By default it only regenerates the
+  # auto-generated release notes from the tag's merged PRs (updates the release
+  # body — it does not rebuild the Docker image or re-upload assets). Optionally
+  # tick `chrome` and/or `firefox` to (re-)submit the extension to that store,
+  # e.g. to retry a single store after a transient outage without re-submitting
+  # the other (which the stores reject as a duplicate version).
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to regenerate release notes for (e.g. v0.2.0)"
+        description: "Existing tag to release (e.g. v0.2.0)"
         required: true
         type: string
+      chrome:
+        description: "Submit to the Chrome Web Store"
+        type: boolean
+        default: false
+      firefox:
+        description: "Submit to Firefox AMO"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -112,17 +123,24 @@ jobs:
           files: ${{ github.event_name == 'push' && 'artifacts/*.zip' || '' }}
           body: ${{ steps.notes.outputs.body }}
 
-  # Opt-in store publishing. Runs only when the repo variable
-  # PUBLISH_EXTENSION == 'true', so tagging a release never publishes by
-  # accident. Secrets are documented in apps/extension/store/README.md.
+  # Store publishing. On a tag push it is opt-in via the repo variable
+  # PUBLISH_EXTENSION == 'true' (so tagging never publishes by accident) and
+  # submits both stores. It can also be run manually via workflow_dispatch with
+  # per-store inputs to (re-)submit Chrome and/or Firefox for an existing tag —
+  # e.g. to retry one store after a transient outage. Secrets are documented in
+  # apps/extension/store/README.md.
   publish-extension:
     needs: release
-    if: ${{ github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true' }}
+    if: >-
+      ${{ (github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true')
+          || (github.event_name == 'workflow_dispatch' && (inputs.chrome || inputs.firefox)) }}
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
@@ -166,18 +184,28 @@ jobs:
           require_one CHROME_ZIP "${chrome[@]}"
           require_one FIREFOX_ZIP "${firefox[@]}"
           require_one SOURCES_ZIP "${sources[@]}"
-      - name: Submit to Chrome Web Store and Firefox AMO
+      # Each store is submitted in its own step so a transient failure in one
+      # (or a deliberate single-store dispatch) neither fails nor re-submits the
+      # other. On a tag push both run; on workflow_dispatch each runs only when
+      # its input is ticked. `wxt submit` only contacts the store(s) whose
+      # --*-zip flags are passed.
+      - name: Submit to Chrome Web Store
+        if: ${{ github.event_name == 'push' || inputs.chrome }}
         working-directory: apps/extension
-        run: |
-          pnpm exec wxt submit \
-            --chrome-zip "$CHROME_ZIP" \
-            --firefox-zip "$FIREFOX_ZIP" \
-            --firefox-sources-zip "$SOURCES_ZIP"
+        run: pnpm exec wxt submit --chrome-zip "$CHROME_ZIP"
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+      - name: Submit to Firefox AMO
+        if: ${{ github.event_name == 'push' || inputs.firefox }}
+        working-directory: apps/extension
+        run: |
+          pnpm exec wxt submit \
+            --firefox-zip "$FIREFOX_ZIP" \
+            --firefox-sources-zip "$SOURCES_ZIP"
+        env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
           FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
