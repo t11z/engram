@@ -27,6 +27,8 @@ interface SubstantiveCase {
   outcome: "substantive";
   minLen: number;
   contains: string;
+  /** Chrome the density picker must have excluded (proves it grabbed content). */
+  notContains?: string;
 }
 interface RejectedCase {
   file: string;
@@ -40,13 +42,16 @@ const cases: FixtureCase[] = [
   // Short content that is essentially the whole page: accepted via coverage,
   // even though it falls well below the strong-length bar.
   { file: "article-short-but-real.html", outcome: "substantive", minLen: 100, contains: "only a hope" },
-  // The rendered README is in the DOM next to a thin link sidebar; coverage makes
-  // us recover the README via the body rather than save the sidebar fragment.
-  { file: "github-blob-readme.html", outcome: "substantive", minLen: 300, contains: "outlives the tool" },
-  // React-shell blob view: the rendered README is absent from the visible DOM and
-  // only present in the embedded JSON payload. Recovering it from there is what
-  // keeps this from being saved as a repo-navigation stub (issue #85).
-  { file: "github-blob-shell.html", outcome: "substantive", minLen: 300, contains: "outlives the tool" },
+  // The rendered README is in the DOM amid heavy app chrome (file tree, toolbar,
+  // repo header); density scoring must grab the article, not the surrounding
+  // navigation (issue #85).
+  {
+    file: "github-blob-readme.html",
+    outcome: "substantive",
+    minLen: 300,
+    contains: "outlives the tool",
+    notContains: "Expand file tree",
+  },
   { file: "link-heavy-listing.html", outcome: "rejected" },
   { file: "js-shell-empty-body.html", outcome: "rejected" },
 ];
@@ -60,6 +65,9 @@ describe("extractFromDocument (fixture corpus)", () => {
       if (!result.ok) return; // narrow for TS
       expect(result.markdown.length).toBeGreaterThanOrEqual(testCase.minLen);
       expect(result.markdown).toContain(testCase.contains);
+      if (testCase.notContains !== undefined) {
+        expect(result.markdown).not.toContain(testCase.notContains);
+      }
       expect(isSubstantive(result.markdown)).toBe(true);
       expect(result.title.length).toBeGreaterThan(0);
     } else {
