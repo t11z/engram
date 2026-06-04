@@ -131,14 +131,17 @@ jobs:
   # apps/extension/store/README.md.
   publish-extension:
     needs: release
-    # Gate on github.event.inputs.* (always stringified) rather than the typed
-    # inputs.* context: workflow_dispatch boolean inputs evaluate inconsistently
-    # via inputs.* and can be falsy even when ticked (actions/runner#1483), which
-    # skipped this job on manual runs. A ticked checkbox is the string 'true'.
+    # On workflow_dispatch the `docker` job is skipped, and that skip propagates
+    # down the needs chain (docker -> release -> here). `release` overrides it with
+    # always(); this job must do the same or it inherits the skip regardless of its
+    # own condition. !cancelled() forces evaluation; needs.release.result guards
+    # against actually running when release failed. Store inputs are gated via
+    # github.event.inputs.* (always stringified — a ticked checkbox is 'true').
     if: >-
-      ${{ (github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true')
-          || (github.event_name == 'workflow_dispatch'
-              && (github.event.inputs.chrome == 'true' || github.event.inputs.firefox == 'true')) }}
+      ${{ !cancelled() && needs.release.result == 'success'
+          && ( (github.event_name == 'push' && vars.PUBLISH_EXTENSION == 'true')
+               || (github.event_name == 'workflow_dispatch'
+                   && (github.event.inputs.chrome == 'true' || github.event.inputs.firefox == 'true')) ) }}
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
