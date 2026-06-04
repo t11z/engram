@@ -175,6 +175,12 @@ jobs:
           # $GITHUB_ENV one variable per line. A glob that matched several files
           # would otherwise produce a multi-line value the runner rejects with
           # "Invalid format" — fail loudly with the candidates instead.
+          #
+          # The *_PATH suffix matters: `wxt submit` (publish-browser-extension)
+          # auto-reads CHROME_ZIP / FIREFOX_ZIP / FIREFOX_SOURCES_ZIP from the
+          # environment and submits any store whose *_ZIP env is set — so naming
+          # these CHROME_ZIP / FIREFOX_ZIP would make the per-store steps below
+          # pull in the other store and fail on its missing secrets.
           require_one() {
             local var=$1; shift
             if [ "$#" -ne 1 ]; then
@@ -189,18 +195,19 @@ jobs:
           for z in *firefox*.zip; do
             case "$z" in *sources*) ;; *) firefox+=("$z") ;; esac
           done
-          require_one CHROME_ZIP "${chrome[@]}"
-          require_one FIREFOX_ZIP "${firefox[@]}"
-          require_one SOURCES_ZIP "${sources[@]}"
+          require_one CHROME_ZIP_PATH "${chrome[@]}"
+          require_one FIREFOX_ZIP_PATH "${firefox[@]}"
+          require_one SOURCES_ZIP_PATH "${sources[@]}"
       # Each store is submitted in its own step so a transient failure in one
       # (or a deliberate single-store dispatch) neither fails nor re-submits the
       # other. On a tag push both run; on workflow_dispatch each runs only when
-      # its input is ticked. `wxt submit` only contacts the store(s) whose
-      # --*-zip flags are passed.
+      # its input is ticked. Only this store's --*-zip flag and secrets are set,
+      # so `wxt submit` contacts only this store (the resolved paths use a _PATH
+      # suffix to avoid its CHROME_ZIP / FIREFOX_ZIP env auto-detection).
       - name: Submit to Chrome Web Store
         if: ${{ github.event_name == 'push' || github.event.inputs.chrome == 'true' }}
         working-directory: apps/extension
-        run: pnpm exec wxt submit --chrome-zip "$CHROME_ZIP"
+        run: pnpm exec wxt submit --chrome-zip "$CHROME_ZIP_PATH"
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
@@ -211,8 +218,8 @@ jobs:
         working-directory: apps/extension
         run: |
           pnpm exec wxt submit \
-            --firefox-zip "$FIREFOX_ZIP" \
-            --firefox-sources-zip "$SOURCES_ZIP"
+            --firefox-zip "$FIREFOX_ZIP_PATH" \
+            --firefox-sources-zip "$SOURCES_ZIP_PATH"
         env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
