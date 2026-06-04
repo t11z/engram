@@ -7,11 +7,18 @@ import type { ExtractResponse } from "@/lib/messaging";
  * Pure extraction pipeline, isolated from the WXT content-script wrapper and the
  * `chrome.*` API so it can be unit-tested under jsdom against real Readability.
  *
- * The flow is: recover a rendered article shipped in an embedded JSON payload
- * (GitHub file views, see {@link extractEmbeddedArticleHtml}); else Readability;
- * if Readability's output is only a small fragment of the page's actual content,
- * prefer a de-chromed copy of the body instead; if nothing yields real content,
- * fail honestly rather than save a link-only stub note.
+ * The job is to grab the page's **visible main content** from the rendered DOM,
+ * generically — no per-site logic. The flow: locate the densest readable region of
+ * the de-chromed DOM ({@link pickMainContentHtml}); run Readability as a cleaner;
+ * keep Readability when it returns substantive content covering that region, else
+ * keep the dense region itself; if neither yields real content, fail honestly
+ * rather than save a link-only stub note.
+ *
+ * Why density rather than fixed selectors or Readability alone: app-style pages
+ * (e.g. a GitHub file view) wrap the rendered article in heavy navigation chrome —
+ * a file tree, a toolbar, breadcrumbs — that a `main`/`article` selector or
+ * Readability can mistake for the body. Scoring every candidate by readable
+ * (non-link) text length lets the actual content region win wherever it sits.
  */
 
 /**
@@ -112,94 +119,59 @@ function collapse(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }
 
+/** Page furniture that is never the main content; removed before scoring. */
+const CHROME_SELECTOR =
+  "nav, header, footer, aside, script, style, noscript, form, svg," +
+  " [role='navigation'], [role='banner'], [role='contentinfo'], [role='complementary']," +
+  " [hidden], [aria-hidden='true']";
+
 /**
- * Build the fallback HTML: a copy of the document with obvious page chrome
- * removed, narrowed to the main content region if one is present. Its text also
- * serves as the "page content" denominator for coverage, so that surrounding
- * nav/footer chrome never penalizes a short but genuine clip.
+ * Build the main-content HTML by locating the densest readable region of the
+ * de-chromed DOM. Its text also serves as the "page content" denominator for
+ * coverage, so that surrounding chrome never penalizes a short but genuine clip.
+ *
+ * "De-chrome, then score" rather than trust a single selector: after dropping
+ * obvious furniture we pick the element that best concentrates readable text (see
+ * {@link densestContentElement}). On a plain article that is the `<article>`/`<main>`
+ * wrapper; on an app-style page it is the content region sitting amid a file tree
+ * or toolbar that a fixed selector would swallow whole.
  */
-function pickFallbackHtml(doc: Document): string {
+function pickMainContentHtml(doc: Document): string {
   const clone = doc.cloneNode(true) as Document;
-  clone
-    .querySelectorAll(
-      "nav, header, footer, aside, script, style, noscript, form," +
-        " [role='navigation'], [role='banner'], [role='contentinfo']",
-    )
-    .forEach((el) => el.remove());
-
-  const root =
-    firstWithText(clone, "main") ??
-    firstWithText(clone, "[role='main']") ??
-    firstWithText(clone, "article") ??
-    clone.body;
-
-  return root?.innerHTML ?? "";
-}
-
-/** First element matching `selector` that has non-whitespace text, if any. */
-function firstWithText(root: Document, selector: string): Element | null {
-  for (const el of root.querySelectorAll(selector)) {
-    if (el.textContent && el.textContent.trim()) return el;
-  }
-  return null;
+  clone.querySelectorAll(CHROME_SELECTOR).forEach((el) => el.remove());
+  const body = clone.body;
+  if (!body) return "";
+  return (densestContentElement(body) ?? body).innerHTML;
 }
 
 /**
- * Recover a rendered article that the page ships as HTML inside an embedded JSON
- * payload rather than (reliably) in the live DOM.
- *
- * GitHub's file ("blob") views are the motivating case and the "raw-file
- * special-case" that the substantive-content guard was always going to need: the
- * rendered README lives in a `…embeddedData` script as a `richText` field, while
- * the visible DOM is a React shell. Before hydration — Turbo navigation, a slow
- * load, GitHub's "There was an error while loading" placeholder — de-chroming and
- * Readability can only reduce that shell to repo navigation, which then slips past
- * the guard as a link-only stub. Reading the payload yields the full article in
- * every load state.
- *
- * Deliberately keyed on the embedded-payload *shape* (an `embeddedData` JSON
- * island carrying a `richText` HTML string), not on prose heuristics or a URL
- * match, so it works in tests without a configured location and stays out of the
- * generic guard. Returns the rendered HTML, or `null` when no such payload exists.
+ * Among `root` and its container descendants, return the element with the highest
+ * readable-text score — its visible text length discounted by how much of that
+ * text is link anchors. A clean prose container (much text, few links) outscores
+ * both its noisier ancestors (which fold in surrounding chrome) and a nav/listing
+ * of the same length (mostly links), so the actual content region wins generically.
  */
-function extractEmbeddedArticleHtml(doc: Document): string | null {
-  for (const script of doc.querySelectorAll('script[type="application/json"]')) {
-    if (!(script.getAttribute("data-target") ?? "").endsWith("embeddedData")) continue;
-    let data: unknown;
-    try {
-      data = JSON.parse(script.textContent ?? "");
-    } catch {
-      continue;
+function densestContentElement(root: Element): Element | null {
+  let best: Element | null = null;
+  let bestScore = 0;
+  for (const el of [root, ...root.querySelectorAll("article, main, section, div, td, [role='main'], [itemprop]")]) {
+    const score = contentScore(el);
+    if (score > bestScore) {
+      bestScore = score;
+      best = el;
     }
-    const html = findRichTextHtml(data);
-    if (html) return html;
   }
-  return null;
+  return best;
 }
 
-/**
- * Depth-first search of a parsed JSON value for a `richText` property whose value
- * is an HTML string (the rendered article). GitHub nests it under a route key
- * whose name churns across releases, so we search by key rather than a fixed path.
- */
-function findRichTextHtml(value: unknown): string | null {
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findRichTextHtml(item);
-      if (found) return found;
-    }
-    return null;
-  }
-  if (value && typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    const rich = obj.richText;
-    if (typeof rich === "string" && rich.trimStart().startsWith("<")) return rich;
-    for (const nested of Object.values(obj)) {
-      const found = findRichTextHtml(nested);
-      if (found) return found;
-    }
-  }
-  return null;
+/** Readable-text score for an element: text length × (1 − link density). */
+function contentScore(el: Element): number {
+  const text = collapse(el.textContent ?? "");
+  if (text.length === 0) return 0;
+  let linkChars = 0;
+  for (const a of el.querySelectorAll("a")) linkChars += collapse(a.textContent ?? "").length;
+  const linkDensity = Math.min(linkChars / text.length, 1);
+  return text.length * (1 - linkDensity);
 }
 
 interface ParsedArticle {
@@ -214,24 +186,15 @@ function pickTitle(doc: Document, article: ParsedArticle | null): string {
 /** Run the full extraction pipeline against a document. DOM in, response out. */
 export function extractFromDocument(doc: Document): ExtractResponse {
   try {
-    // A rendered article shipped in an embedded JSON payload (GitHub blob views)
-    // is the authoritative content and is present regardless of hydration, so it
-    // takes priority over the DOM-scraping path below.
-    const embeddedHtml = extractEmbeddedArticleHtml(doc);
-    if (embeddedHtml) {
-      const markdown = htmlToMarkdown(embeddedHtml);
-      if (markdown && isSubstantive(markdown)) {
-        return { ok: true, title: pickTitle(doc, null), markdown };
-      }
-    }
+    // The densest readable region of the rendered DOM is the main content, and
+    // its length is the coverage denominator (how much of it a candidate captured).
+    const mainMarkdown = htmlToMarkdown(pickMainContentHtml(doc));
+    const contentChars = stripMarkup(mainMarkdown).text.length;
 
-    // The de-chromed body is both the fallback candidate and the coverage
-    // denominator (how much of the page's content a candidate captured).
-    const fallbackMarkdown = htmlToMarkdown(pickFallbackHtml(doc));
-    const contentChars = stripMarkup(fallbackMarkdown).text.length;
-
-    // Readability mutates the document it is given, so hand it a throwaway clone
-    // and keep `doc` pristine.
+    // Readability is a strong cleaner for article pages; prefer it, but only when
+    // it returns substantive content that covers most of the region we found —
+    // otherwise it has latched onto a fragment and the dense region is truer.
+    // Readability mutates the document it is given, so hand it a throwaway clone.
     const article = new Readability(doc.cloneNode(true) as Document).parse() as ParsedArticle | null;
 
     if (article?.content) {
@@ -241,8 +204,8 @@ export function extractFromDocument(doc: Document): ExtractResponse {
       }
     }
 
-    if (fallbackMarkdown && isSubstantive(fallbackMarkdown, contentChars)) {
-      return { ok: true, title: pickTitle(doc, article), markdown: fallbackMarkdown };
+    if (mainMarkdown && isSubstantive(mainMarkdown, contentChars)) {
+      return { ok: true, title: pickTitle(doc, article), markdown: mainMarkdown };
     }
 
     return { ok: false, error: "Couldn't find readable content to clip on this page." };

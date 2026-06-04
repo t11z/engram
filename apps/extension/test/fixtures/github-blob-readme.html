@@ -1,7 +1,8 @@
-<!-- outcome: SUBSTANTIVE -- a GitHub blob view where the rendered README IS in the DOM (markdown-body),
-     alongside a thin, link-heavy "About" sidebar that Readability is prone to grab. Coverage makes the
-     pipeline reject that small fragment and prefer the de-chromed body, recovering the actual README
-     instead of saving a link-only stub. Trimmed/simplified from github.com/.../blob/main/README.md. -->
+<!-- outcome: SUBSTANTIVE -- a realistic GitHub blob view: the rendered README (<article class="markdown-body">)
+     is in the live DOM, but wrapped in heavy app chrome — global nav, a repo header of action links, a
+     file-tree sidebar of many file links, and a file toolbar (Raw/Blame/Copy/Edit). A fixed main/article
+     selector or Readability can swallow that chrome; density scoring must pick the article instead.
+     Trimmed/simplified from github.com/t11z/engram/blob/main/README.md (the articleInDom:true case). -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -10,30 +11,57 @@
   </head>
   <body>
     <header role="banner">
-      <nav><a href="/">GitHub</a> <a href="/pulls">Pull requests</a> <a href="/issues">Issues</a> <a href="/marketplace">Marketplace</a></nav>
+      <nav><a href="/">GitHub</a> <a href="/pulls">Pull requests</a> <a href="/issues">Issues</a> <a href="/marketplace">Marketplace</a> <a href="/explore">Explore</a></nav>
     </header>
+    <div class="repohead">
+      <a href="/t11z">t11z</a> / <strong><a href="/t11z/engram">engram</a></strong>
+      <ul>
+        <li><a href="/login?return_to=%2Ft11z%2Fengram">Watch</a></li>
+        <li><a href="/login?return_to=%2Ft11z%2Fengram">Fork 0</a></li>
+        <li><a href="/login?return_to=%2Ft11z%2Fengram">Star 1</a></li>
+      </ul>
+      <nav aria-label="Repository"><a href="/t11z/engram">Code</a> <a href="/t11z/engram/issues">Issues</a> <a href="/t11z/engram/pulls">Pull requests</a> <a href="/t11z/engram/actions">Actions</a></nav>
+    </div>
     <main>
-      <aside aria-label="About">
-        <p>A self-hosted Markdown knowledge vault — see <a href="https://t11z.github.io/engram/">the docs</a>.</p>
-        <a href="https://t11z.github.io/engram/">t11z.github.io/engram</a>
-      </aside>
-      <article class="markdown-body">
-        <h1>Engram</h1>
-        <p>
-          Engram is a self-hosted Markdown knowledge vault. Your notes are ordinary files on disk
-          that you can read, search, back up, and move with everyday tools, whether or not the
-          server happens to be running at the time.
-        </p>
-        <h2>Why plain files</h2>
-        <p>
-          Because the storage format is just text, the data outlives the tool that produced it. A
-          note written today can still be opened decades from now, long after this particular
-          application has been forgotten, which is exactly what a durable archive needs.
-        </p>
-      </article>
+      <div class="file-tree">
+        <h2>Files Expand file tree</h2>
+        <a href="/t11z/engram/tree/main">main</a>
+        <a href="/t11z/engram/tree/main/apps">apps</a>
+        <a href="/t11z/engram/tree/main/docs">docs</a>
+        <a href="/t11z/engram/tree/main/infra">infra</a>
+        <a href="/t11z/engram/tree/main/packages">packages</a>
+        <a href="/t11z/engram/blob/main/CLAUDE.md">CLAUDE.md</a>
+        <a href="/t11z/engram/blob/main/LICENSE">LICENSE</a>
+        <a href="/t11z/engram/blob/main/README.md">README.md</a>
+        <a href="/t11z/engram/blob/main/pnpm-workspace.yaml">pnpm-workspace.yaml</a>
+      </div>
+      <div class="file-view">
+        <div class="file-toolbar">
+          README.md
+          <a href="/t11z/engram/blob/main/README.md">Preview</a>
+          <a href="/t11z/engram/blob/main/README.md?plain=1">Code</a>
+          <a href="/t11z/engram/blame/main/README.md">Blame</a>
+          <a href="/t11z/engram/raw/refs/heads/main/README.md">Raw</a>
+          <a href="/t11z/engram/edit/main/README.md">Edit</a>
+        </div>
+        <article class="markdown-body entry-content" itemprop="text">
+          <h1>Engram</h1>
+          <p>
+            Engram is a self-hosted Markdown knowledge vault. Your notes are ordinary files on disk
+            that you can read, search, back up, and move with everyday tools, whether or not the
+            server happens to be running at the time.
+          </p>
+          <h2>Why plain files</h2>
+          <p>
+            Because the storage format is just text, the data outlives the tool that produced it. A
+            note written today can still be opened decades from now, long after this particular
+            application has been forgotten, which is exactly what a durable archive needs.
+          </p>
+        </article>
+      </div>
     </main>
     <footer role="contentinfo">
-      <nav><a href="/about">About</a> <a href="/pricing">Pricing</a> <a href="/contact">Contact</a></nav>
+      <nav><a href="/about">About</a> <a href="/pricing">Pricing</a> <a href="/contact">Contact</a> <a href="/privacy">Privacy</a></nav>
     </footer>
   </body>
 </html>
